@@ -29,16 +29,17 @@
             background: #f59e0b; border-radius: 50%; border: 3px solid #1a120b;
         }
 
-        /* Prevent stretching during capture */
-        .card-capture-mode {
-            width: 800px !important;
-            height: 1000px !important;
-            transform: none !important;
-            transition: none !important;
-        }
-
         .handle-shadow {
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Prevent stretching during capture - forced fixed aspect */
+        .capturing-now {
+            width: 400px !important;
+            height: 500px !important;
+            position: fixed !important;
+            top: -9999px !important;
+            left: -9999px !important;
         }
     </style>
 </head>
@@ -75,25 +76,35 @@
             const [namePos, setNamePos] = useState({ x: 75, y: 85 });
             
             // Interaction State
-            const [activeAction, setActiveAction] = useState(null); // { type: 'drag'|'resize', target: 'wish'|'name' }
+            const [activeAction, setActiveAction] = useState(null); 
             const cardRef = useRef(null);
             const startRef = useRef({ x: 0, y: 0, initialScale: 1, initialPos: { x: 50, y: 30 } });
 
             const handleDownload = async () => {
                 setIsSaving(true);
+                // We give React a moment to render the card in its 'non-rotated' state
                 setTimeout(async () => {
                     try {
                         const canvas = await html2canvas(cardRef.current, {
                             useCORS: true,
-                            scale: 3,
+                            scale: 4, // High Resolution output
                             backgroundColor: null,
                             logging: false,
-                            width: cardRef.current.offsetWidth,
-                            height: cardRef.current.offsetHeight
+                            // Lock dimensions to prevent any responsive stretching
+                            width: 400,
+                            height: 500,
+                            onclone: (clonedDoc) => {
+                                const clonedCard = clonedDoc.querySelector('.capture-target');
+                                if (clonedCard) {
+                                    clonedCard.style.transform = 'none';
+                                    clonedCard.style.width = '400px';
+                                    clonedCard.style.height = '500px';
+                                }
+                            }
                         });
                         const image = canvas.toDataURL("image/png", 1.0);
                         const link = document.createElement('a');
-                        link.download = `AmarEidCard_2026.png`;
+                        link.download = `EidWish2026_${Date.now()}.png`;
                         link.href = image;
                         link.click();
                     } catch (err) {
@@ -104,7 +115,6 @@
                 }, 100);
             };
 
-            // Unified Interaction Handler
             const onInteractionStart = (e, type, target) => {
                 e.stopPropagation();
                 if (e.touches) e.preventDefault();
@@ -127,31 +137,27 @@
             useEffect(() => {
                 const onInteractionMove = (e) => {
                     if (!activeAction) return;
-                    
                     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                     const rect = cardRef.current.getBoundingClientRect();
 
                     if (activeAction.type === 'resize') {
                         const deltaX = clientX - startRef.current.x;
-                        const newScale = Math.max(0.5, Math.min(2.5, startRef.current.initialScale + (deltaX / 150)));
+                        const newScale = Math.max(0.4, Math.min(2.5, startRef.current.initialScale + (deltaX / 150)));
                         if (activeAction.target === 'wish') setWishScale(newScale);
                         else setNameScale(newScale);
                     } 
                     else if (activeAction.type === 'drag') {
                         const deltaXPercent = ((clientX - startRef.current.x) / rect.width) * 100;
                         const deltaYPercent = ((clientY - startRef.current.y) / rect.height) * 100;
-                        
                         const newPos = {
                             x: Math.max(5, Math.min(95, startRef.current.initialPos.x + deltaXPercent)),
                             y: Math.max(5, Math.min(95, startRef.current.initialPos.y + deltaYPercent))
                         };
-                        
                         if (activeAction.target === 'wish') setWishPos(newPos);
                         else setNamePos(newPos);
                     }
                 };
-
                 const onInteractionEnd = () => setActiveAction(null);
 
                 if (activeAction) {
@@ -160,7 +166,6 @@
                     window.addEventListener('touchmove', onInteractionMove, { passive: false });
                     window.addEventListener('touchend', onInteractionEnd);
                 }
-
                 return () => {
                     window.removeEventListener('mousemove', onInteractionMove);
                     window.removeEventListener('mouseup', onInteractionEnd);
@@ -171,11 +176,17 @@
 
             return (
                 <div className="flex flex-col h-screen w-full bg-[#0a0806] overflow-hidden text-stone-100 select-none relative">
-                    {/* Background Stall */}
-                    <div className="absolute inset-0 z-0 overflow-hidden">
-                        <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-105"
-                            style={{ backgroundImage: 'url("Background.jpg")' }} />
+                    
+                    {/* Desktop Background - Contain & Centered Visibility */}
+                    <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center bg-[#0d0a08]">
+                        <div 
+                            className="absolute inset-0 bg-no-repeat bg-center bg-cover md:bg-contain opacity-60 scale-105 md:scale-100 transition-opacity duration-700"
+                            style={{ backgroundImage: 'url("Background.jpg")' }} 
+                        />
+                        {/* Overlay to blend padding on sides */}
                         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#1a120b]" />
+                        
+                        {/* Tuni Bulbs */}
                         <div className="absolute top-4 left-0 w-full flex justify-around opacity-70 z-10">
                             {[...Array(12)].map((_, i) => (
                                 <div key={i} className="w-1.5 h-1.5 bg-amber-400 rounded-full blur-[1px] animate-pulse" />
@@ -186,14 +197,12 @@
                     {/* Header - Centered Branding */}
                     <header className="relative z-30 p-6 flex flex-col items-center justify-center gap-2">
                         <div className="flex items-center gap-4">
-                            {/* Changed Logo 1 to PNG */}
                             <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
-                                <img src="logo1.png" alt="Logo 1" className="w-full h-full object-contain" />
+                                <img src="logo1.png" alt="Logo 1" className="w-full h-full object-contain p-1" />
                             </div>
                             <span className="text-amber-500 font-serif italic text-2xl">&</span>
-                            {/* Changed Logo 2 to PNG */}
                             <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
-                                <img src="logo2.png" alt="Logo 2" className="w-full h-full object-contain" />
+                                <img src="logo2.png" alt="Logo 2" className="w-full h-full object-contain p-1" />
                             </div>
                         </div>
                         
@@ -201,15 +210,15 @@
                             <h1 className="text-[10px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase">Eid Wish 2026</h1>
                         </div>
 
-                        {/* Customization Floating Button */}
+                        {/* Edit Button with Text below */}
                         <div className="absolute top-6 right-6 flex flex-col items-center gap-1">
                             <button 
                                 onClick={() => setIsEditing(true)} 
-                                className="w-10 h-10 bg-amber-500 text-stone-900 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-90 hover:bg-amber-400"
+                                className="w-11 h-11 bg-amber-500 text-stone-900 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-90 hover:bg-amber-400"
                             >
                                 <i data-lucide="pen-tool" className="w-5 h-5"></i>
                             </button>
-                            <span className="text-[10px] uppercase font-bold text-amber-500/80 tracking-widest">Edit</span>
+                            <span className="text-[9px] uppercase font-bold text-amber-500 tracking-widest drop-shadow-md">Edit</span>
                         </div>
                     </header>
 
@@ -219,18 +228,17 @@
                             ref={cardRef}
                             style={{ 
                                 transform: isSaving ? 'none' : 'rotate(20deg)', 
-                                transition: isSaving ? 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none' 
+                                // Temporarily force exact px for save
+                                width: isSaving ? '400px' : '100%',
+                                height: isSaving ? '500px' : 'auto',
+                                transition: isSaving ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
                             }}
-                            className="relative w-full max-w-[300px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden"
+                            className={`relative w-full max-w-[300px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden capture-target`}
                         >
                             <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
-                            
-                            {/* Texture Overlay */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
                             
-                            {/* Interactive Content Layer */}
                             <div className="absolute inset-0 pointer-events-none">
-                                
                                 {/* WISH BOX */}
                                 <div 
                                     style={{ 
@@ -249,7 +257,6 @@
                                             {userWish || "Eid Mubarak"}
                                         </p>
                                         <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
-                                        
                                         <div 
                                             onMouseDown={(e) => onInteractionStart(e, 'resize', 'wish')}
                                             onTouchStart={(e) => onInteractionStart(e, 'resize', 'wish')}
@@ -279,7 +286,6 @@
                                             {userName || "Your Name"}
                                         </p>
                                         <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
-                                        
                                         <div 
                                             onMouseDown={(e) => onInteractionStart(e, 'resize', 'name')}
                                             onTouchStart={(e) => onInteractionStart(e, 'resize', 'name')}
@@ -323,10 +329,10 @@
                         </p>
                     </div>
 
-                    {/* Start Popup */}
+                    {/* Start Popup - Bengali Nostalgia */}
                     {showStartPopup && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
-                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-10 border border-white/5 shadow-2xl text-center relative overflow-hidden font-bangla">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-500 font-bangla">
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-10 border border-white/5 shadow-2xl text-center relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
                                 <h2 className="text-2xl font-bold text-amber-100 mb-4 animate-bounce leading-relaxed">আমাদের সেই ছোট্টবেলার ঈদ কার্ড!</h2>
                                 <p className="text-stone-400 text-sm leading-relaxed mb-8 font-light">
@@ -368,7 +374,7 @@
                                             <span className="text-[10px] text-amber-500 font-bold">{Math.round(wishScale * 100)}%</span>
                                         </div>
                                         <input 
-                                            type="range" min="0.5" max="2.5" step="0.05" 
+                                            type="range" min="0.4" max="2.5" step="0.05" 
                                             value={wishScale} 
                                             onChange={(e) => setWishScale(parseFloat(e.target.value))} 
                                             className="w-full h-1.5 bg-stone-800 rounded-full appearance-none cursor-pointer accent-amber-500" 
@@ -391,7 +397,7 @@
                                             <span className="text-[10px] text-amber-500 font-bold">{Math.round(nameScale * 100)}%</span>
                                         </div>
                                         <input 
-                                            type="range" min="0.5" max="2.0" step="0.05" 
+                                            type="range" min="0.4" max="2.0" step="0.05" 
                                             value={nameScale} 
                                             onChange={(e) => setNameScale(parseFloat(e.target.value))} 
                                             className="w-full h-1.5 bg-stone-800 rounded-full appearance-none cursor-pointer accent-amber-500" 
