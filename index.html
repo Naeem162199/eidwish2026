@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amar Eid Card 2024</title>
+    <title>Eid Wish 2026</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React, ReactDOM, and Babel for running JSX in browser -->
@@ -16,16 +16,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
         
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #0a0806; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: #0a0806; color: white; }
         .font-serif { font-family: 'Playfair Display', serif; }
+        .font-bangla { font-family: 'Hind Siliguri', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         input[type='range']::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+            -webkit-appearance: none; appearance: none; width: 22px; height: 22px;
             background: #f59e0b; border-radius: 50%; border: 3px solid #1a120b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glass effect for UI elements */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
     </style>
 </head>
@@ -50,11 +65,12 @@
         ];
 
         const App = () => {
+            const [showIntro, setShowIntro] = useState(true);
             const [selectedDesign, setSelectedDesign] = useState(EID_DESIGNS[0]);
             const [userWish, setUserWish] = useState('');
             const [isEditing, setIsEditing] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
-            const [wishPos, setWishPos] = useState({ x: 50, y: 30 }); 
+            const [wishPos, setWishPos] = useState({ x: 50, y: 35 }); 
             const [wishScale, setWishScale] = useState(1);
             const [isDragging, setIsDragging] = useState(false);
             const cardRef = useRef(null);
@@ -76,6 +92,7 @@
 
             const handleDownload = async () => {
                 setIsSaving(true);
+                // Straighten the card before capture
                 setTimeout(async () => {
                     try {
                         const canvas = await html2canvas(cardRef.current, {
@@ -86,7 +103,7 @@
                         });
                         const image = canvas.toDataURL("image/png", 1.0);
                         const link = document.createElement('a');
-                        link.download = `AmarEidCard.png`;
+                        link.download = `EidWish2026.png`;
                         link.href = image;
                         link.click();
                     } catch (err) {
@@ -102,45 +119,85 @@
                     className="flex flex-col h-screen w-full bg-[#0a0806] overflow-hidden text-stone-100 select-none relative"
                     onMouseMove={handleMove} onMouseUp={handleEnd} onTouchMove={handleMove} onTouchEnd={handleEnd}
                 >
-                    {/* Background */}
+                    {/* Intro Pop-up */}
+                    {showIntro && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl">
+                            <div className="w-full max-w-md bg-[#16100a] rounded-[40px] p-8 md:p-12 border border-white/5 text-center shadow-2xl fade-in relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[60px]" />
+                                
+                                <h2 className="text-3xl font-serif text-amber-200 italic mb-6">Eid Wish 2026</h2>
+                                
+                                <div className="space-y-4 font-bangla text-stone-300 text-lg md:text-xl leading-relaxed mb-10">
+                                    <p>
+                                        রঙিন খামে ভরে এক টুকরো ভালোবাসা প্রিয়জনের ঠিকানায় পৌঁছে দেওয়ার সেই সোনালী দিনগুলো হয়তো আজ অনেক দূরে।
+                                    </p>
+                                    <p>
+                                        কিন্তু সেই কার্ড দেওয়ার আনন্দ আর নস্টালজিয়া আজও আমাদের হৃদয়ে অমলিন। সেই অনুভূতিগুলো ফিরিয়ে আনতেই আমাদের এই ক্ষুদ্র প্রচেষ্টা।
+                                    </p>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => setShowIntro(false)}
+                                    className="w-full py-5 rounded-3xl bg-amber-500 text-stone-900 font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-transform"
+                                >
+                                    শুরু করুন
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Background - Adjusted for more transparency */}
                     <div className="absolute inset-0 z-0 overflow-hidden">
-                        <div className="absolute inset-0 bg-cover bg-center opacity-30 scale-105"
-                            style={{ backgroundImage: 'url("Gemini_Generated_Image_623bhc623bhc623b (2).jfif")' }} />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-[#1a120b]" />
-                        <div className="absolute top-4 left-0 w-full flex justify-around opacity-70 z-10">
-                            {[...Array(10)].map((_, i) => (
-                                <div key={i} className="w-1 h-1 bg-amber-400 rounded-full blur-[1px] animate-pulse" />
+                        {/* THE BACKGROUND IMAGE STALL */}
+                        <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-100 transition-opacity duration-1000"
+                            style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1590073242678-70ee3fc28e8e?q=80&w=2000")' }} />
+                        
+                        {/* Gradient Overlays - Made lighter to show the image better */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+                        
+                        <div className="absolute top-4 left-0 w-full flex justify-around opacity-90 z-10 pointer-events-none">
+                            {[...Array(12)].map((_, i) => (
+                                <div key={i} className="w-1 h-1 bg-amber-300 rounded-full blur-[1px] animate-pulse" 
+                                     style={{ animationDelay: `${i * 0.2}s` }} />
                             ))}
                         </div>
                     </div>
 
-                    {/* Header */}
-                    <header className="relative z-30 p-4 flex flex-col gap-4">
-                        <div className="flex justify-between items-center px-2">
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 text-[8px] font-bold text-stone-500 uppercase">Logo 1</div>
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 text-[8px] font-bold text-stone-500 uppercase">Logo 2</div>
+                    {/* Header: Centered Logos & Title */}
+                    <header className="relative z-30 pt-6 pb-2 px-4 flex flex-col items-center gap-4">
+                        <div className="flex items-center justify-center gap-6">
+                            <div className="w-16 h-16 glass rounded-2xl flex items-center justify-center text-[10px] font-bold text-stone-400 uppercase tracking-tighter shadow-xl">Logo 1</div>
+                            <span className="text-amber-500 font-serif text-2xl italic opacity-50 select-none">&</span>
+                            <div className="w-16 h-16 glass rounded-2xl flex items-center justify-center text-[10px] font-bold text-stone-400 uppercase tracking-tighter shadow-xl">Logo 2</div>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <div className="bg-black/50 backdrop-blur-lg px-3 py-2 rounded-2xl border border-white/5">
-                                <h1 className="text-[10px] font-serif italic text-amber-200/90 tracking-widest uppercase">Amar Eid Card</h1>
-                            </div>
-                            <button onClick={() => setIsEditing(true)} className="bg-amber-500 text-stone-900 px-4 py-2 rounded-full font-bold shadow-xl flex items-center gap-2">
-                                <i data-lucide="pen-tool" className="w-4 h-4"></i>
-                                <span className="text-[10px] uppercase">Wish</span>
-                            </button>
+                        <div className="text-center">
+                            <h2 className="text-sm md:text-base font-serif italic text-amber-200/90 tracking-[0.4em] uppercase">
+                                Eid Wish 2026
+                            </h2>
+                            <div className="w-24 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent mx-auto mt-2"></div>
                         </div>
                     </header>
+
+                    {/* Floating Wish Trigger - Top Right */}
+                    <div className="absolute top-8 right-6 z-40">
+                        <button onClick={() => setIsEditing(true)} className="bg-amber-500 text-stone-900 w-12 h-12 rounded-full font-bold shadow-2xl flex items-center justify-center active:scale-90 transition-transform ring-4 ring-black/20">
+                            <i data-lucide="pen-tool" className="w-5 h-5"></i>
+                        </button>
+                    </div>
 
                     {/* Stage */}
                     <main className="relative flex-1 flex flex-col items-center justify-center z-10 p-6 overflow-visible">
                         <div 
                             ref={cardRef}
-                            style={{ transform: isSaving ? 'none' : 'rotate(20deg)', transition: 'transform 0.4s ease' }}
-                            className="relative w-full max-w-[270px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden"
+                            style={{ transform: isSaving ? 'none' : 'rotate(20deg)', transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                            className="relative w-full max-w-[270px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[40px_60px_100px_rgba(0,0,0,0.8)] overflow-hidden"
                         >
                             <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
+                            
+                            {/* Paper Texture Overlay */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
                             
+                            {/* DRAGGABLE WISH BOX */}
                             {userWish && (
                                 <div 
                                     onMouseDown={handleStart} onTouchStart={handleStart}
@@ -149,58 +206,64 @@
                                         transform: `translate(-50%, -50%) scale(${wishScale})`,
                                         cursor: isDragging ? 'grabbing' : 'grab'
                                     }}
-                                    className={`absolute z-30 inline-block bg-white/95 px-4 py-3 rounded-lg shadow-2xl ${isDragging ? 'ring-2 ring-amber-400' : ''}`}
+                                    className={`absolute z-30 inline-block bg-white/95 px-5 py-3 rounded-lg shadow-2xl ${isDragging ? 'ring-2 ring-amber-400' : ''}`}
                                 >
-                                    <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap max-w-[150px]">{userWish}</p>
+                                    <p className="text-stone-900 font-serif text-sm md:text-base leading-tight text-center whitespace-pre-wrap max-w-[160px]">
+                                        {userWish}
+                                    </p>
                                 </div>
                             )}
                         </div>
 
+                        {/* Download CTA */}
                         <button 
                             onClick={handleDownload} disabled={isSaving}
-                            className="mt-16 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50"
+                            className="mt-12 md:mt-16 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all hover:bg-white/20"
                         >
                             <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
-                            {isSaving ? 'Processing...' : 'Download PNG'}
+                            {isSaving ? 'Processing...' : 'Download Card'}
                         </button>
                     </main>
 
                     {/* Footer Carousel */}
-                    <div className="relative z-20 pb-10 bg-gradient-to-t from-[#0a0806] via-[#0a0806]/95 to-transparent">
-                        <div className="flex overflow-x-auto space-x-4 px-8 no-scrollbar pb-2">
+                    <div className="relative z-20 pb-8 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+                        <div className="flex overflow-x-auto space-x-5 px-10 no-scrollbar pb-4 pt-4">
                             {EID_DESIGNS.map((design) => (
                                 <button key={design.id} onClick={() => setSelectedDesign(design)}
                                     className={`flex-shrink-0 w-16 h-16 rounded-full border-2 transition-all overflow-hidden relative ${
-                                        selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg' : 'border-white/10 opacity-40 scale-90'
+                                        selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg ring-4 ring-amber-500/10' : 'border-white/10 opacity-60 scale-90'
                                     }`}
                                 >
                                     <img src={design.image} className="absolute inset-0 w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/20" />
-                                    <span className="relative text-[10px] font-black text-white">{design.id}</span>
+                                    <span className="relative text-[10px] font-black text-white drop-shadow-md">{design.id}</span>
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[8px] text-stone-600 font-serif tracking-[0.3em] uppercase text-center mt-4">
-                            In association with <span className="text-stone-400 font-bold">Trumega</span> & <span className="text-stone-400 font-bold">Ceevit</span>
+                        <p className="text-[9px] text-stone-500 font-serif tracking-[0.4em] uppercase text-center mt-2 opacity-60">
+                            In association with <span className="text-stone-300 font-bold">Trumega</span> & <span className="text-stone-300 font-bold">Ceevit</span>
                         </p>
                     </div>
 
-                    {/* Edit Modal */}
+                    {/* Customize Modal */}
                     {isEditing && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl">
-                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[32px] p-8 border border-white/5 relative">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-xl font-serif text-amber-100 italic">Customize</h3>
-                                    <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2">✕</button>
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5 relative shadow-2xl">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h3 className="text-2xl font-serif text-amber-100 italic">Customize Wish</h3>
+                                    <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2 hover:text-white transition-colors">✕</button>
                                 </div>
-                                <div className="space-y-8">
-                                    <textarea rows={2} maxLength={60} placeholder="Type your wish..." value={userWish} onChange={(e) => setUserWish(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-lg font-serif text-amber-50 outline-none text-center resize-none" />
-                                    <div className="space-y-3">
-                                        <label className="text-[9px] uppercase tracking-widest text-stone-500 font-black">Wish Box Size</label>
-                                        <input type="range" min="0.6" max="1.6" step="0.1" value={wishScale} onChange={(e) => setWishScale(parseFloat(e.target.value))} className="w-full h-1.5 bg-stone-800 rounded-full appearance-none cursor-pointer" />
+                                <div className="space-y-10">
+                                    <div className="relative">
+                                        <textarea rows={2} maxLength={60} placeholder="Type your wish here..." value={userWish} onChange={(e) => setUserWish(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-3xl p-6 text-xl font-serif text-amber-50 outline-none text-center resize-none shadow-inner placeholder:text-stone-800" />
+                                        <span className="absolute -bottom-6 right-2 text-[9px] text-stone-600 uppercase tracking-widest">{userWish.length}/60</span>
                                     </div>
-                                    <button onClick={() => setIsEditing(false)} className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black text-[10px] uppercase shadow-xl">Apply</button>
+                                    <div className="space-y-4 pt-2">
+                                        <label className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-black">Wish Box Size</label>
+                                        <input type="range" min="0.6" max="1.6" step="0.1" value={wishScale} onChange={(e) => setWishScale(parseFloat(e.target.value))} className="w-full h-2 bg-stone-900 rounded-full appearance-none cursor-pointer" />
+                                    </div>
+                                    <button onClick={() => setIsEditing(false)} className="w-full py-5 rounded-3xl bg-amber-500 text-stone-900 font-black text-xs uppercase shadow-xl tracking-widest active:scale-95 transition-transform">Apply Changes</button>
                                 </div>
                             </div>
                         </div>
@@ -217,4 +280,3 @@
     </script>
 </body>
 </html>
-
