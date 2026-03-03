@@ -18,7 +18,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap');
         
-        body { font-family: 'Inter', 'Noto Sans Bengali', sans-serif; margin: 0; background: #0a0806; }
+        body { font-family: 'Inter', 'Noto Sans Bengali', sans-serif; margin: 0; background: #000; }
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-bengali { font-family: 'Noto Sans Bengali', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -28,6 +28,20 @@
             -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
             background: #f59e0b; border-radius: 50%; border: 3px solid #1a120b;
         }
+
+        /* Desktop specific padding container */
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            height: 100vh;
+            background: #0a0806;
+            box-shadow: 0 0 100px rgba(0,0,0,0.5);
+        }
+        
+        @media (min-width: 1024px) {
+            body { background: #000; padding: 0 40px; }
+        }
     </style>
 </head>
 <body>
@@ -36,10 +50,9 @@
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
         
-        // 1. YOUR LOGO URL
+        // Asset Paths (Strictly Preserved)
         const CEEVIT_LOGO_URL = "Ceevit.png";
-
-        // Strictly preserved image paths
+        const BACKGROUND_URL = "Background.jpg";
         const EID_DESIGNS = [
             { id: 1, name: 'Design 1', image: '1.png' },
             { id: 2, name: 'Design 2', image: '2.png' },
@@ -57,17 +70,21 @@
             const [showSplash, setShowSplash] = useState(true);
             const [isEditing, setIsEditing] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
+            
+            // Interaction States
+            const [wishPos, setWishPos] = useState({ x: 50, y: 35 });
+            const [namePos, setNamePos] = useState({ x: 75, y: 85 });
             const [wishScale, setWishScale] = useState(1.0);
-            const [isResizing, setIsResizing] = useState(false);
+            const [nameScale, setNameScale] = useState(0.8);
+            
+            const [activeAction, setActiveAction] = useState(null); // 'dragWish', 'dragName', 'resizingWish', 'resizingName'
             
             const cardRef = useRef(null);
-            const resizeStartRef = useRef({ x: 0, scale: 1 });
+            const initialTouchRef = useRef({ x: 0, y: 0, scale: 1, pos: { x: 0, y: 0 } });
 
-            // Initialize icons inside React lifecycle
+            // Initialize icons
             useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
+                if (window.lucide) window.lucide.createIcons();
             }, [showSplash, isEditing, isSaving]);
 
             const handleDownload = async () => {
@@ -79,8 +96,6 @@
                             scale: 3,
                             backgroundColor: null,
                             logging: false,
-                            width: cardRef.current.offsetWidth,
-                            height: cardRef.current.offsetHeight
                         });
                         const image = canvas.toDataURL("image/png", 1.0);
                         const link = document.createElement('a');
@@ -95,183 +110,196 @@
                 }, 100);
             };
 
-            const onResizeStart = (e) => {
+            // Unified Interaction Logic
+            const handleStart = (type, action, e) => {
                 e.stopPropagation();
-                e.preventDefault();
-                setIsResizing(true);
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                resizeStartRef.current = { x: clientX, scale: wishScale };
+                const point = e.touches ? e.touches[0] : e;
+                setActiveAction(`${action}${type}`);
+                
+                const currentPos = type === 'Wish' ? wishPos : namePos;
+                const currentScale = type === 'Wish' ? wishScale : nameScale;
+                
+                initialTouchRef.current = { 
+                    x: point.clientX, 
+                    y: point.clientY, 
+                    scale: currentScale, 
+                    pos: { ...currentPos } 
+                };
             };
 
-            useEffect(() => {
-                const onResizeMove = (e) => {
-                    if (!isResizing) return;
-                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                    const deltaX = clientX - resizeStartRef.current.x;
-                    const newScale = Math.max(0.6, Math.min(2.0, resizeStartRef.current.scale + (deltaX / 150)));
-                    setWishScale(newScale);
-                };
+            const handleMove = (e) => {
+                if (!activeAction || !cardRef.current) return;
+                const point = e.touches ? e.touches[0] : e;
+                const rect = cardRef.current.getBoundingClientRect();
+                
+                const dx = point.clientX - initialTouchRef.current.x;
+                const dy = point.clientY - initialTouchRef.current.y;
 
-                const onResizeEnd = () => setIsResizing(false);
+                if (activeAction.startsWith('drag')) {
+                    const type = activeAction.replace('drag', '');
+                    const xPerc = initialTouchRef.current.pos.x + (dx / rect.width) * 100;
+                    const yPerc = initialTouchRef.current.pos.y + (dy / rect.height) * 100;
+                    
+                    const constrainedX = Math.max(10, Math.min(90, xPerc));
+                    const constrainedY = Math.max(10, Math.min(95, yPerc));
 
-                if (isResizing) {
-                    window.addEventListener('mousemove', onResizeMove);
-                    window.addEventListener('mouseup', onResizeEnd);
-                    window.addEventListener('touchmove', onResizeMove);
-                    window.addEventListener('touchend', onResizeEnd);
+                    if (type === 'Wish') setWishPos({ x: constrainedX, y: constrainedY });
+                    else setNamePos({ x: constrainedX, y: constrainedY });
+                } else if (activeAction.startsWith('resizing')) {
+                    const type = activeAction.replace('resizing', '');
+                    const newScale = Math.max(0.4, Math.min(2.0, initialTouchRef.current.scale + (dx / 150)));
+                    if (type === 'Wish') setWishScale(newScale);
+                    else setNameScale(newScale);
                 }
+            };
 
+            const handleEnd = () => setActiveAction(null);
+
+            useEffect(() => {
+                if (activeAction) {
+                    window.addEventListener('mousemove', handleMove);
+                    window.addEventListener('mouseup', handleEnd);
+                    window.addEventListener('touchmove', handleMove);
+                    window.addEventListener('touchend', handleEnd);
+                }
                 return () => {
-                    window.removeEventListener('mousemove', onResizeMove);
-                    window.removeEventListener('mouseup', onResizeEnd);
-                    window.removeEventListener('touchmove', onResizeMove);
-                    window.removeEventListener('touchend', onResizeEnd);
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('mouseup', handleEnd);
+                    window.removeEventListener('touchmove', handleMove);
+                    window.removeEventListener('touchend', handleEnd);
                 };
-            }, [isResizing, wishScale]);
+            }, [activeAction]);
 
             return (
-                <div className="flex flex-col h-screen w-full bg-[#0a0806] overflow-hidden text-stone-100 select-none relative">
-                    {/* Background path */}
+                <div className="app-container">
+                    {/* Background Overlay */}
                     <div className="absolute inset-0 z-0 overflow-hidden">
-                        <div className="absolute inset-0 bg-cover bg-center opacity-30 scale-105"
-                            style={{ backgroundImage: 'url("Background.jpg")' }} />
+                        <div className="absolute inset-0 bg-cover bg-center opacity-40 scale-105"
+                            style={{ backgroundImage: `url("${BACKGROUND_URL}")` }} />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-[#1a120b]" />
-                        <div className="absolute top-4 left-0 w-full flex justify-around opacity-70 z-10">
-                            {[...Array(10)].map((_, i) => (
-                                <div key={i} className="w-1 h-1 bg-amber-400 rounded-full blur-[1px] animate-pulse" />
-                            ))}
-                        </div>
                     </div>
 
-                    {/* Main Header */}
-                    <header className="relative z-30 p-4 flex flex-col items-center gap-4">
-                        <div className="w-full flex justify-center">
-                            <div className="w-[120px] aspect-[4/3] bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-2xl">
-                                {CEEVIT_LOGO_URL ? (
-                                    <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
-                                ) : (
-                                    <span className="text-[10px] font-bold text-stone-600 uppercase tracking-widest text-center px-1 leading-tight">Ceevit Logo Placeholder</span>
-                                )}
+                    {/* Main Content */}
+                    <div className="relative z-10 flex flex-col h-full">
+                        {/* Header */}
+                        <header className="p-6 flex flex-col items-center gap-2">
+                            <div className="w-[100px] aspect-[4/3] bg-white rounded-2xl flex items-center justify-center border-4 border-white shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden">
+                                <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
                             </div>
-                        </div>
-                        <div className="w-full flex justify-between items-center px-2">
-                            <div className="bg-black/50 backdrop-blur-lg px-4 py-2 rounded-2xl border border-white/5">
-                                <h1 className="text-[10px] font-serif italic text-amber-200/90 tracking-[0.2em] uppercase">Eid Wish 2026</h1>
-                            </div>
-                            <button onClick={() => setIsEditing(true)} className="bg-amber-500 text-stone-900 px-5 py-2.5 rounded-full font-bold shadow-xl flex items-center gap-2 transition-all active:scale-95">
-                                <i data-lucide="pen-tool" className="w-3.5 h-3.5"></i>
-                                <span className="text-[10px] uppercase font-black">Customize</span>
+                            <h1 className="text-[14px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase drop-shadow-lg">
+                                Eid Wish 2026
+                            </h1>
+                            <button onClick={() => setIsEditing(true)} className="mt-2 bg-amber-500 text-stone-900 px-5 py-2 rounded-full font-black text-[10px] uppercase shadow-xl active:scale-95 transition-all">
+                                Customize Card
                             </button>
-                        </div>
-                    </header>
+                        </header>
 
-                    {/* Interaction Stage */}
-                    <main className="relative flex-1 flex flex-col items-center justify-center z-10 p-6 overflow-visible">
-                        <div 
-                            ref={cardRef}
-                            style={{ 
-                                transform: isSaving ? 'none' : 'rotate(20deg)', 
-                                transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
-                            }}
-                            className="relative w-full max-w-[300px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden"
-                        >
-                            <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
-                            <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-                            
-                            <div className="absolute inset-0 flex flex-col p-6 pointer-events-none">
-                                <div className="mt-[25%] w-full flex justify-center">
+                        {/* Card Interaction Area */}
+                        <main className="flex-1 flex flex-col items-center justify-center p-6 overflow-visible">
+                            <div 
+                                ref={cardRef}
+                                style={{ 
+                                    transform: isSaving ? 'none' : 'rotate(20deg)', 
+                                    transition: isSaving ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                                }}
+                                className="relative w-full aspect-[4/5] bg-stone-900 rounded shadow-[30px_50px_80px_rgba(0,0,0,0.8)] overflow-hidden border border-white/5"
+                            >
+                                <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
+                                <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
+                                
+                                {/* DRAGGABLE WISH BOX */}
+                                <div 
+                                    onMouseDown={(e) => handleStart('Wish', 'drag', e)}
+                                    onTouchStart={(e) => handleStart('Wish', 'drag', e)}
+                                    style={{ 
+                                        left: `${wishPos.x}%`, top: `${wishPos.y}%`,
+                                        transform: `translate(-50%, -50%) scale(${wishScale})`,
+                                        cursor: activeAction === 'dragWish' ? 'grabbing' : 'grab'
+                                    }}
+                                    className={`absolute z-30 pointer-events-auto bg-white/95 px-5 py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] group ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
+                                >
+                                    <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
+                                    <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
                                     <div 
-                                        style={{ 
-                                            transform: `scale(${wishScale})`,
-                                            transformOrigin: 'top center'
-                                        }}
-                                        className="relative pointer-events-auto bg-white/95 px-5 py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] group transition-shadow hover:shadow-2xl"
+                                        onMouseDown={(e) => handleStart('Wish', 'resizing', e)}
+                                        onTouchStart={(e) => handleStart('Wish', 'resizing', e)}
+                                        className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">
-                                            {userWish || "Eid Mubarak"}
-                                        </p>
-                                        <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
-                                        <div 
-                                            onMouseDown={onResizeStart}
-                                            onTouchStart={onResizeStart}
-                                            className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize shadow-lg border border-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                        <i data-lucide="maximize-2" className="w-3 h-3 text-stone-900"></i>
+                                    </div>
+                                </div>
+
+                                {/* DRAGGABLE NAME BOX */}
+                                <div 
+                                    onMouseDown={(e) => handleStart('Name', 'drag', e)}
+                                    onTouchStart={(e) => handleStart('Name', 'drag', e)}
+                                    style={{ 
+                                        left: `${namePos.x}%`, top: `${namePos.y}%`,
+                                        transform: `translate(-50%, -50%) scale(${nameScale})`,
+                                        cursor: activeAction === 'dragName' ? 'grabbing' : 'grab'
+                                    }}
+                                    className={`absolute z-30 pointer-events-auto bg-white/95 px-4 py-2 rounded shadow-2xl flex flex-col items-start min-w-[100px] group ${activeAction?.includes('Name') ? 'ring-2 ring-amber-500' : ''}`}
+                                >
+                                    <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
+                                    <p className="text-stone-900 font-serif text-xs italic">{userName || "Your Name"}</p>
+                                    <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
+                                    <div 
+                                        onMouseDown={(e) => handleStart('Name', 'resizing', e)}
+                                        onTouchStart={(e) => handleStart('Name', 'resizing', e)}
+                                        className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <i data-lucide="maximize-2" className="w-3 h-3 text-stone-900"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onClick={handleDownload} disabled={isSaving}
+                                className="mt-12 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[11px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all">
+                                <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
+                                {isSaving ? 'Saving...' : 'Download PNG'}
+                            </button>
+                        </main>
+
+                        {/* Footer Carousel */}
+                        <footer className="p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                            <div className="flex overflow-x-auto px-4 no-scrollbar pb-2 justify-start md:justify-center">
+                                <div className="flex space-x-4">
+                                    {EID_DESIGNS.map((design) => (
+                                        <button key={design.id} onClick={() => setSelectedDesign(design)}
+                                            className={`flex-shrink-0 w-14 h-14 rounded-full border-2 transition-all overflow-hidden relative ${
+                                                selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg' : 'border-white/10 opacity-40 scale-90'
+                                            }`}
                                         >
-                                            <i data-lucide="maximize-2" className="w-3 h-3 text-stone-900"></i>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-auto ml-auto mb-6">
-                                    <div className="bg-white/95 px-4 py-2 rounded shadow-xl flex flex-col items-start min-w-[100px]">
-                                        <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
-                                        <p className="text-stone-900 font-serif text-xs italic">
-                                            {userName || "Your Name"}
-                                        </p>
-                                        <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
-                                    </div>
+                                            <img src={design.image} className="absolute inset-0 w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20" />
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-
-                        <button 
-                            onClick={handleDownload} disabled={isSaving}
-                            className="mt-16 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all"
-                        >
-                            <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
-                            {isSaving ? 'Processing...' : 'Download Card'}
-                        </button>
-                    </main>
-
-                    {/* Footer Carousel */}
-                    <div className="relative z-20 pb-10 bg-gradient-to-t from-[#0a0806] via-[#0a0806]/95 to-transparent">
-                        <div className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center">
-                            <div className="flex space-x-4">
-                                {EID_DESIGNS.map((design) => (
-                                    <button key={design.id} onClick={() => setSelectedDesign(design)}
-                                        className={`flex-shrink-0 w-14 h-14 rounded-full border-2 transition-all overflow-hidden relative ${
-                                            selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg' : 'border-white/10 opacity-40 scale-90'
-                                        }`}
-                                    >
-                                        <img src={design.image} className="absolute inset-0 w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/20" />
-                                        <span className="relative text-[10px] font-black text-white">{design.id}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <p className="text-[10px] text-stone-600 font-serif tracking-[1em] uppercase text-center mt-8 opacity-80">
-                            In association with <span className="text-stone-400 font-bold ml-2">Ceevit</span>
-                        </p>
+                            <p className="text-[10px] text-stone-500 font-serif tracking-[1em] uppercase text-center mt-6">
+                                In association with <span className="text-stone-300 font-bold ml-2">Ceevit</span>
+                            </p>
+                        </footer>
                     </div>
 
                     {/* SPLASH SCREEN */}
                     {showSplash && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
                             <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-12 border border-white/5 shadow-2xl flex flex-col items-center animate-in zoom-in duration-300">
-                                <div className="mb-10 w-full flex flex-col items-center">
-                                    <div className="w-32 aspect-[4/3] bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center overflow-hidden shadow-inner mb-4">
-                                        {CEEVIT_LOGO_URL ? (
-                                            <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
-                                        ) : (
-                                            <span className="text-[10px] font-bold text-stone-700 uppercase tracking-widest text-center px-2">Ceevit Logo placeholder (4:3)</span>
-                                        )}
+                                <div className="mb-6 w-full flex flex-col items-center gap-2">
+                                    <div className="w-[120px] aspect-[4/3] bg-white rounded-2xl flex items-center justify-center border-4 border-white overflow-hidden shadow-2xl">
+                                        <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
                                     </div>
-                                    <div className="h-px w-20 bg-amber-500/20"></div>
+                                    <h1 className="text-[12px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase mt-2">Eid Wish 2026</h1>
                                 </div>
 
                                 <div className="text-center font-bengali space-y-6">
-                                    <h2 className="text-2xl font-black text-amber-100 leading-tight">
-                                        আমাদের সেই ছোট্টবেলার ঈদ কার্ড!
-                                    </h2>
-                                    <p className="text-sm text-stone-400 leading-relaxed opacity-80 font-medium">
-                                        স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।
-                                    </p>
+                                    <h2 className="text-2xl font-black text-amber-100 leading-tight">আমাদের সেই ছোট্টবেলার ঈদ কার্ড!</h2>
+                                    <p className="text-sm text-stone-400 leading-relaxed opacity-80">স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।</p>
                                 </div>
 
-                                <button 
-                                    onClick={() => setShowSplash(false)}
-                                    className="mt-12 w-full py-5 rounded-[20px] bg-amber-500 text-stone-900 font-bengali font-black text-lg shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:bg-amber-400 active:scale-95 transition-all"
-                                >
+                                <button onClick={() => setShowSplash(false)}
+                                    className="mt-12 w-full py-5 rounded-[20px] bg-amber-500 text-stone-900 font-bengali font-black text-lg shadow-2xl active:scale-95 transition-all">
                                     শুরু করুন
                                 </button>
                             </div>
@@ -281,54 +309,27 @@
                     {/* EDIT MODAL */}
                     {isEditing && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
-                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5 relative shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h3 className="text-2xl font-serif text-amber-100 italic">Customize Your Card</h3>
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 border border-white/5 shadow-2xl">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h3 className="text-xl font-serif text-amber-100 italic">Customize Content</h3>
                                     <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2 hover:text-white transition-colors">✕</button>
                                 </div>
-                                
-                                <div className="space-y-8">
+                                <div className="space-y-6">
                                     <div>
-                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-3 font-black">Your Wish</label>
-                                        <textarea 
-                                            autoFocus rows={2} maxLength={60} 
-                                            placeholder="Write a short wish..." 
-                                            value={userWish} 
-                                            onChange={(e) => setUserWish(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/5 rounded-3xl p-6 text-base font-serif text-amber-50 outline-none text-center resize-none focus:border-amber-500/50 transition-all shadow-inner" 
-                                        />
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">Your Wish</label>
+                                        <textarea rows={2} maxLength={60} value={userWish} onChange={(e) => setUserWish(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-base font-serif text-amber-50 outline-none text-center resize-none" />
                                     </div>
-                                    
                                     <div>
-                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-3 font-black">Your Name</label>
-                                        <input 
-                                            type="text" maxLength={25} 
-                                            placeholder="Signature Name..." 
-                                            value={userName} 
-                                            onChange={(e) => setUserName(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/5 rounded-3xl p-6 text-base font-serif text-amber-50 outline-none text-center focus:border-amber-500/50 transition-all shadow-inner" 
-                                        />
+                                        <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">Your Name</label>
+                                        <input type="text" maxLength={25} value={userName} onChange={(e) => setUserName(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-base font-serif text-amber-50 outline-none text-center" />
                                     </div>
-                                    
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-[10px] uppercase tracking-widest text-stone-500 font-black">Text Size</label>
-                                            <span className="text-[11px] text-amber-500 font-black">{Math.round(wishScale * 100)}%</span>
-                                        </div>
-                                        <input 
-                                            type="range" min="0.6" max="2.0" step="0.05" 
-                                            value={wishScale} 
-                                            onChange={(e) => setWishScale(parseFloat(e.target.value))} 
-                                            className="w-full h-1.5 bg-stone-800 rounded-full appearance-none cursor-pointer accent-amber-500" 
-                                        />
-                                    </div>
-
-                                    <button 
-                                        onClick={() => setIsEditing(false)} 
-                                        className="w-full py-5 rounded-3xl bg-amber-500 text-stone-900 font-black text-[11px] uppercase shadow-2xl hover:bg-amber-400 active:scale-95 transition-all mt-6"
-                                    >
-                                        Save & Apply
+                                    <button onClick={() => setIsEditing(false)} 
+                                        className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black text-[12px] uppercase shadow-xl active:scale-95 transition-all">
+                                        Done
                                     </button>
+                                    <p className="text-[9px] text-stone-600 italic text-center">Note: You can also drag and resize boxes directly on the card!</p>
                                 </div>
                             </div>
                         </div>
