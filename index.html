@@ -16,10 +16,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
         
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #0a0806; }
+        body { font-family: 'Inter', 'Hind Siliguri', sans-serif; margin: 0; background: #0a0806; }
         .font-serif { font-family: 'Playfair Display', serif; }
+        .font-bangla { font-family: 'Hind Siliguri', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -63,6 +64,7 @@
             const [userName, setUserName] = useState('');
             const [isEditing, setIsEditing] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
+            const [showStartPopup, setShowStartPopup] = useState(true);
             
             // Wish Box State
             const [wishScale, setWishScale] = useState(1.1);
@@ -169,7 +171,7 @@
 
             return (
                 <div className="flex flex-col h-screen w-full bg-[#0a0806] overflow-hidden text-stone-100 select-none relative">
-                    {/* Background Stall - More visible */}
+                    {/* Background Stall */}
                     <div className="absolute inset-0 z-0 overflow-hidden">
                         <div className="absolute inset-0 bg-cover bg-center opacity-60 scale-105"
                             style={{ backgroundImage: 'url("Background.jpg")' }} />
@@ -181,19 +183,25 @@
                         </div>
                     </div>
 
-                    {/* Header - Centered Logos & Title */}
+                    {/* Header - Centered Branding */}
                     <header className="relative z-30 p-6 flex flex-col items-center justify-center gap-2">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 text-[8px] font-bold text-stone-500 uppercase">Logo 1</div>
+                            {/* Changed Logo 1 to PNG */}
+                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                                <img src="logo1.png" alt="Logo 1" className="w-full h-full object-contain" />
+                            </div>
                             <span className="text-amber-500 font-serif italic text-2xl">&</span>
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 text-[8px] font-bold text-stone-500 uppercase">Logo 2</div>
+                            {/* Changed Logo 2 to PNG */}
+                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                                <img src="logo2.png" alt="Logo 2" className="w-full h-full object-contain" />
+                            </div>
                         </div>
                         
                         <div className="bg-black/40 backdrop-blur-lg px-4 py-1 rounded-full border border-white/10 shadow-xl">
                             <h1 className="text-[10px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase">Eid Wish 2026</h1>
                         </div>
 
-                        {/* Customization Button - Top Right with Text */}
+                        {/* Customization Floating Button */}
                         <div className="absolute top-6 right-6 flex flex-col items-center gap-1">
                             <button 
                                 onClick={() => setIsEditing(true)} 
@@ -217,12 +225,13 @@
                         >
                             <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                             
+                            {/* Texture Overlay */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
                             
                             {/* Interactive Content Layer */}
                             <div className="absolute inset-0 pointer-events-none">
                                 
-                                {/* WISH BOX - Draggable and Resizable */}
+                                {/* WISH BOX */}
                                 <div 
                                     style={{ 
                                         left: `${wishPos.x}%`, 
@@ -251,7 +260,7 @@
                                     </div>
                                 </div>
 
-                                {/* NAME BOX - Draggable and Resizable */}
+                                {/* NAME BOX */}
                                 <div 
                                     style={{ 
                                         left: `${namePos.x}%`, 
@@ -313,6 +322,26 @@
                             In association with <span className="text-stone-400 font-bold">Trumega</span> & <span className="text-stone-400 font-bold">Ceevit</span>
                         </p>
                     </div>
+
+                    {/* Start Popup */}
+                    {showStartPopup && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-10 border border-white/5 shadow-2xl text-center relative overflow-hidden font-bangla">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+                                <h2 className="text-2xl font-bold text-amber-100 mb-4 animate-bounce leading-relaxed">আমাদের সেই ছোট্টবেলার ঈদ কার্ড!</h2>
+                                <p className="text-stone-400 text-sm leading-relaxed mb-8 font-light">
+                                    স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। <br/>
+                                    নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।
+                                </p>
+                                <button 
+                                    onClick={() => setShowStartPopup(false)}
+                                    className="w-full py-5 rounded-2xl bg-amber-500 text-stone-900 font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/20 active:scale-95 transition-all"
+                                >
+                                    শুরু করুন
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Edit Modal */}
                     {isEditing && (
