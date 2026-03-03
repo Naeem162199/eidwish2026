@@ -36,7 +36,7 @@
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
         
-        // 1. ADD YOUR LOGO URL HERE
+        // 1. YOUR LOGO URL
         const CEEVIT_LOGO_URL = "Ceevit.png";
 
         // Strictly preserved image paths
@@ -48,7 +48,6 @@
             { id: 5, name: 'Design 5', image: '5.png' },
             { id: 6, name: 'Design 6', image: '6.png' },
             { id: 7, name: 'Design 7', image: '7.png' },
-
         ];
 
         const App = () => {
@@ -63,6 +62,13 @@
             
             const cardRef = useRef(null);
             const resizeStartRef = useRef({ x: 0, scale: 1 });
+
+            // Initialize icons inside React lifecycle
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [showSplash, isEditing, isSaving]);
 
             const handleDownload = async () => {
                 setIsSaving(true);
@@ -140,7 +146,6 @@
                     {/* Main Header */}
                     <header className="relative z-30 p-4 flex flex-col items-center gap-4">
                         <div className="w-full flex justify-center">
-                            {/* Partner Logo Area */}
                             <div className="w-[120px] aspect-[4/3] bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-2xl">
                                 {CEEVIT_LOGO_URL ? (
                                     <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
@@ -174,7 +179,6 @@
                             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
                             
                             <div className="absolute inset-0 flex flex-col p-6 pointer-events-none">
-                                {/* Top Wish Area */}
                                 <div className="mt-[25%] w-full flex justify-center">
                                     <div 
                                         style={{ 
@@ -187,8 +191,6 @@
                                             {userWish || "Eid Mubarak"}
                                         </p>
                                         <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
-                                        
-                                        {/* Resize Handle for UI */}
                                         <div 
                                             onMouseDown={onResizeStart}
                                             onTouchStart={onResizeStart}
@@ -199,7 +201,6 @@
                                     </div>
                                 </div>
 
-                                {/* Bottom Name Area */}
                                 <div className="mt-auto ml-auto mb-6">
                                     <div className="bg-white/95 px-4 py-2 rounded shadow-xl flex flex-col items-start min-w-[100px]">
                                         <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
@@ -238,7 +239,6 @@
                                 ))}
                             </div>
                         </div>
-                        {/* Only Ceevit Branding */}
                         <p className="text-[10px] text-stone-600 font-serif tracking-[1em] uppercase text-center mt-8 opacity-80">
                             In association with <span className="text-stone-400 font-bold ml-2">Ceevit</span>
                         </p>
@@ -248,12 +248,10 @@
                     {showSplash && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
                             <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-12 border border-white/5 shadow-2xl flex flex-col items-center animate-in zoom-in duration-300">
-                                
-                                {/* Logo in Splash */}
                                 <div className="mb-10 w-full flex flex-col items-center">
                                     <div className="w-32 aspect-[4/3] bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center overflow-hidden shadow-inner mb-4">
                                         {CEEVIT_LOGO_URL ? (
-                                            <img src={Ceevit.png} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
+                                            <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
                                         ) : (
                                             <span className="text-[10px] font-bold text-stone-700 uppercase tracking-widest text-center px-2">Ceevit Logo placeholder (4:3)</span>
                                         )}
@@ -266,7 +264,7 @@
                                         আমাদের সেই ছোট্টবেলার ঈদ কার্ড!
                                     </h2>
                                     <p className="text-sm text-stone-400 leading-relaxed opacity-80 font-medium">
-                                        স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।
+                                        স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।
                                     </p>
                                 </div>
 
@@ -284,7 +282,6 @@
                     {isEditing && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
                             <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5 relative shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-                                
                                 <div className="flex justify-between items-center mb-10">
                                     <h3 className="text-2xl font-serif text-amber-100 italic">Customize Your Card</h3>
                                     <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2 hover:text-white transition-colors">✕</button>
@@ -342,11 +339,6 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        
-        window.addEventListener('load', () => {
-            setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 1000);
-        });
-        setInterval(() => { if(window.lucide) lucide.createIcons(); }, 2000);
     </script>
 </body>
 </html>
