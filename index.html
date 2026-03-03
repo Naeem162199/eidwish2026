@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eid Wish 2026</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,7 +29,28 @@
             background: #f59e0b; border-radius: 50%; border: 3px solid #1a120b;
         }
 
-        /* App shell allows side padding for desktop so background image shows */
+        /* Responsive Background Image Logic */
+        .fixed-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: 0;
+            /* Default Mobile BG */
+            background-image: url("Background.jpg");
+        }
+
+        /* Desktop BG override */
+        @media (min-width: 1024px) {
+            .fixed-bg {
+                background-image: url("background desktop.jpg");
+            }
+        }
+
         .app-shell {
             width: 100%;
             height: 100%;
@@ -45,22 +66,17 @@
             max-width: 500px;
             height: 100%;
             position: relative;
-            background: rgba(10, 8, 6, 0.85); /* Slightly transparent to see shop-feel */
-            backdrop-filter: blur(10px);
+            background: rgba(10, 8, 6, 0.9);
+            backdrop-filter: blur(12px);
             box-shadow: 0 0 100px rgba(0,0,0,0.8);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Responsive Background Image Layer */
-        .fixed-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center center;
-            z-index: 0;
+        /* Ensure draggable items don't trigger page scrolling */
+        .touch-none {
+            touch-action: none;
         }
         
         @media (min-width: 1024px) {
@@ -74,10 +90,8 @@
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
         
-        // --- ASSET PATHS (Update your background filenames here) ---
+        // --- ASSET PATHS (Strictly Preserved) ---
         const CEEVIT_LOGO_URL = "Ceevit.png";
-        const DESKTOP_BG_URL = "background desktop.jpg"; 
-        const MOBILE_BG_URL = "Background.jpg";         
 
         const EID_DESIGNS = [
             { id: 1, name: 'Design 1', image: '1.png' },
@@ -97,7 +111,7 @@
             const [isEditing, setIsEditing] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
             
-            // Interaction States for Boxes
+            // Interaction States
             const [wishPos, setWishPos] = useState({ x: 50, y: 35 });
             const [namePos, setNamePos] = useState({ x: 75, y: 85 });
             const [wishScale, setWishScale] = useState(1.0);
@@ -135,7 +149,6 @@
                 }, 100);
             };
 
-            // Touch and Mouse Movement Logic
             const handleStart = (type, action, e) => {
                 e.stopPropagation();
                 const point = e.touches ? e.touches[0] : e;
@@ -197,131 +210,128 @@
 
             return (
                 <div className="app-shell">
-                    {/* Background Layer with Switchable Images */}
-                    <div className="fixed-bg hidden lg:block" style={{ backgroundImage: `url("${DESKTOP_BG_URL}")` }} />
-                    <div className="fixed-bg block lg:hidden" style={{ backgroundImage: `url("${MOBILE_BG_URL}")` }} />
+                    {/* Background Layer with Switchable CSS Images */}
+                    <div className="fixed-bg" />
                     
                     <div className="app-container">
-                        <div className="relative z-10 flex flex-col h-full">
-                            {/* Header - Tightened for Mobile */}
-                            <header className="pt-4 pb-2 md:pt-8 md:pb-4 flex flex-col items-center gap-2 md:gap-3">
-                                {/* Ceevit Logo Visibility */}
-                                <div className="w-[80px] md:w-[100px] aspect-[4/3] bg-white rounded-xl md:rounded-2xl flex items-center justify-center border-2 md:border-4 border-white shadow-xl overflow-hidden">
-                                    <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-1" alt="Ceevit Logo" />
-                                </div>
-                                <h1 className="text-[12px] md:text-[14px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase drop-shadow-xl text-center">
-                                    Eid Wish 2026
-                                </h1>
-                                <button onClick={() => setIsEditing(true)} className="mt-0.5 bg-amber-500 text-stone-900 px-4 md:px-6 py-1.5 md:py-2 rounded-full font-black text-[9px] md:text-[10px] uppercase shadow-lg active:scale-95 transition-all">
-                                    Customize Card
-                                </button>
-                            </header>
+                        {/* Header Area */}
+                        <header className="pt-6 pb-2 flex flex-col items-center gap-2 flex-shrink-0">
+                            <div className="w-[100px] aspect-[4/3] bg-white rounded-2xl flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
+                                <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-1.5" alt="Ceevit Logo" />
+                            </div>
+                            <h1 className="text-[14px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase drop-shadow-xl text-center">
+                                Eid Wish 2026
+                            </h1>
+                            <button onClick={() => setIsEditing(true)} className="mt-1 bg-amber-500 text-stone-900 px-6 py-2 rounded-full font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all">
+                                Customize Card
+                            </button>
+                        </header>
 
-                            {/* Card Stage - Flex Grow to center the card properly */}
-                            <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 overflow-visible">
+                        {/* Main Stage - Centered Scroll Area */}
+                        <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-visible min-h-0">
+                            <div 
+                                ref={cardRef}
+                                style={{ 
+                                    transform: isSaving ? 'none' : 'rotate(20deg)', 
+                                    transition: isSaving ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                                }}
+                                className="relative w-full aspect-[4/5] max-h-[55vh] lg:max-h-[60vh] bg-stone-900 rounded shadow-[30px_50px_80px_rgba(0,0,0,0.8)] overflow-hidden border border-white/5"
+                            >
+                                <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
+                                <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
+                                
+                                {/* DRAGGABLE WISH BOX */}
                                 <div 
-                                    ref={cardRef}
+                                    onMouseDown={(e) => handleStart('Wish', 'drag', e)}
+                                    onTouchStart={(e) => handleStart('Wish', 'drag', e)}
                                     style={{ 
-                                        transform: isSaving ? 'none' : 'rotate(20deg)', 
-                                        transition: isSaving ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                                        left: `${wishPos.x}%`, top: `${wishPos.y}%`,
+                                        transform: `translate(-50%, -50%) scale(${wishScale})`,
+                                        cursor: activeAction === 'dragWish' ? 'grabbing' : 'grab'
                                     }}
-                                    className="relative w-full aspect-[4/5] max-w-[280px] md:max-w-none bg-stone-900 rounded shadow-[30px_50px_80px_rgba(0,0,0,0.8)] overflow-hidden border border-white/5"
+                                    className={`absolute z-30 pointer-events-auto bg-white/95 px-5 py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] group touch-none ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
                                 >
-                                    <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
-                                    <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-                                    
-                                    {/* DRAGGABLE WISH BOX */}
+                                    <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
+                                    <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
                                     <div 
-                                        onMouseDown={(e) => handleStart('Wish', 'drag', e)}
-                                        onTouchStart={(e) => handleStart('Wish', 'drag', e)}
-                                        style={{ 
-                                            left: `${wishPos.x}%`, top: `${wishPos.y}%`,
-                                            transform: `translate(-50%, -50%) scale(${wishScale})`,
-                                            cursor: activeAction === 'dragWish' ? 'grabbing' : 'grab'
-                                        }}
-                                        className={`absolute z-30 pointer-events-auto bg-white/95 px-5 py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] group ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
+                                        onMouseDown={(e) => handleStart('Wish', 'resizing', e)}
+                                        onTouchStart={(e) => handleStart('Wish', 'resizing', e)}
+                                        className="absolute -bottom-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                                     >
-                                        <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
-                                        <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
-                                        <div 
-                                            onMouseDown={(e) => handleStart('Wish', 'resizing', e)}
-                                            onTouchStart={(e) => handleStart('Wish', 'resizing', e)}
-                                            className="absolute -bottom-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <i data-lucide="maximize-2" className="w-4 h-4 text-stone-900"></i>
-                                        </div>
-                                    </div>
-
-                                    {/* DRAGGABLE NAME BOX */}
-                                    <div 
-                                        onMouseDown={(e) => handleStart('Name', 'drag', e)}
-                                        onTouchStart={(e) => handleStart('Name', 'drag', e)}
-                                        style={{ 
-                                            left: `${namePos.x}%`, top: `${namePos.y}%`,
-                                            transform: `translate(-50%, -50%) scale(${nameScale})`,
-                                            cursor: activeAction === 'dragName' ? 'grabbing' : 'grab'
-                                        }}
-                                        className={`absolute z-30 pointer-events-auto bg-white/95 px-4 py-2 rounded shadow-2xl flex flex-col items-start min-w-[100px] group ${activeAction?.includes('Name') ? 'ring-2 ring-amber-500' : ''}`}
-                                    >
-                                        <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
-                                        <p className="text-stone-900 font-serif text-xs italic">{userName || "Your Name"}</p>
-                                        <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
-                                        <div 
-                                            onMouseDown={(e) => handleStart('Name', 'resizing', e)}
-                                            onTouchStart={(e) => handleStart('Name', 'resizing', e)}
-                                            className="absolute -bottom-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <i data-lucide="maximize-2" className="w-4 h-4 text-stone-900"></i>
-                                        </div>
+                                        <i data-lucide="maximize-2" className="w-4 h-4 text-stone-900"></i>
                                     </div>
                                 </div>
 
-                                <button onClick={handleDownload} disabled={isSaving}
-                                    className="mt-8 md:mt-12 bg-white/10 text-white px-8 md:px-10 py-3 md:py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] md:text-[11px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all">
-                                    <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
-                                    {isSaving ? 'Processing...' : 'Download PNG'}
-                                </button>
-                            </main>
-
-                            {/* Carousel - Moved Up on Mobile */}
-                            <footer className="pb-6 md:pb-10 bg-gradient-to-t from-black via-black/80 to-transparent pt-2">
-                                <div className="flex overflow-x-auto px-6 no-scrollbar pb-2 justify-start md:justify-center">
-                                    <div className="flex space-x-4">
-                                        {EID_DESIGNS.map((design) => (
-                                            <button key={design.id} onClick={() => setSelectedDesign(design)}
-                                                className={`flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full border-2 transition-all overflow-hidden relative ${
-                                                    selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg' : 'border-white/10 opacity-40 scale-90'
-                                                }`}
-                                            >
-                                                <img src={design.image} className="absolute inset-0 w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/20" />
-                                            </button>
-                                        ))}
+                                {/* DRAGGABLE NAME BOX */}
+                                <div 
+                                    onMouseDown={(e) => handleStart('Name', 'drag', e)}
+                                    onTouchStart={(e) => handleStart('Name', 'drag', e)}
+                                    style={{ 
+                                        left: `${namePos.x}%`, top: `${namePos.y}%`,
+                                        transform: `translate(-50%, -50%) scale(${nameScale})`,
+                                        cursor: activeAction === 'dragName' ? 'grabbing' : 'grab'
+                                    }}
+                                    className={`absolute z-30 pointer-events-auto bg-white/95 px-4 py-2 rounded shadow-2xl flex flex-col items-start min-w-[100px] group touch-none ${activeAction?.includes('Name') ? 'ring-2 ring-amber-500' : ''}`}
+                                >
+                                    <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
+                                    <p className="text-stone-900 font-serif text-xs italic">{userName || "Your Name"}</p>
+                                    <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
+                                    <div 
+                                        onMouseDown={(e) => handleStart('Name', 'resizing', e)}
+                                        onTouchStart={(e) => handleStart('Name', 'resizing', e)}
+                                        className="absolute -bottom-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <i data-lucide="maximize-2" className="w-4 h-4 text-stone-900"></i>
                                     </div>
                                 </div>
-                                <p className="text-[9px] md:text-[10px] text-stone-500 font-serif tracking-[0.8em] md:tracking-[1em] uppercase text-center mt-4">
-                                    In association with <span className="text-stone-300 font-bold ml-2">Ceevit</span>
-                                </p>
-                            </footer>
-                        </div>
+                            </div>
+
+                            <button onClick={handleDownload} disabled={isSaving}
+                                className="mt-6 md:mt-10 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all flex-shrink-0">
+                                <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
+                                {isSaving ? 'Processing...' : 'Download Card'}
+                            </button>
+                        </main>
+
+                        {/* Carousel Footer - More Visible */}
+                        <footer className="pb-8 pt-4 bg-gradient-to-t from-black via-black/80 to-transparent flex-shrink-0">
+                            <div className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center">
+                                <div className="flex space-x-4">
+                                    {EID_DESIGNS.map((design) => (
+                                        <button key={design.id} onClick={() => setSelectedDesign(design)}
+                                            className={`flex-shrink-0 w-14 h-14 rounded-full border-2 transition-all overflow-hidden relative ${
+                                                selectedDesign.id === design.id ? 'border-amber-400 scale-110 shadow-lg' : 'border-white/10 opacity-40 scale-90'
+                                            }`}
+                                        >
+                                            <img src={design.image} className="absolute inset-0 w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20" />
+                                            <span className="relative text-[10px] font-black text-white">{design.id}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-stone-500 font-serif tracking-[0.8em] uppercase text-center mt-6">
+                                In association with <span className="text-stone-300 font-bold ml-2 text-center uppercase tracking-[0.3em]">Ceevit</span>
+                            </p>
+                        </footer>
                     </div>
 
                     {/* SPLASH SCREEN */}
                     {showSplash && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
-                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-12 border border-white/5 shadow-2xl flex flex-col items-center animate-in zoom-in duration-300">
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-10 border border-white/5 shadow-2xl flex flex-col items-center animate-in zoom-in duration-300">
                                 <div className="mb-6 w-full flex flex-col items-center gap-3">
-                                    <div className="w-[100px] md:w-[120px] aspect-[4/3] bg-white rounded-2xl flex items-center justify-center border-4 border-white overflow-hidden shadow-2xl">
+                                    <div className="w-[120px] aspect-[4/3] bg-white rounded-2xl flex items-center justify-center border-4 border-white overflow-hidden shadow-2xl">
                                         <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
                                     </div>
                                     <h1 className="text-[12px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase mt-1 text-center">Eid Wish 2026</h1>
                                 </div>
                                 <div className="text-center font-bengali space-y-6">
-                                    <h2 className="text-xl md:text-2xl font-black text-amber-100 leading-tight">আমাদের সেই ছোট্টবেলার ঈদ কার্ড!</h2>
-                                    <p className="text-xs md:text-sm text-stone-400 leading-relaxed opacity-80 font-medium text-center px-4">স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।</p>
+                                    <h2 className="text-2xl font-black text-amber-100 leading-tight">আমাদের সেই ছোট্টবেলার ঈদ কার্ড!</h2>
+                                    <p className="text-sm text-stone-400 leading-relaxed opacity-80 font-medium text-center">স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।</p>
                                 </div>
                                 <button onClick={() => setShowSplash(false)}
-                                    className="mt-10 md:mt-12 w-full py-4 md:py-5 rounded-[20px] bg-amber-500 text-stone-900 font-bengali font-black text-lg shadow-2xl active:scale-95 transition-all">
+                                    className="mt-12 w-full py-5 rounded-[20px] bg-amber-500 text-stone-900 font-bengali font-black text-lg shadow-2xl active:scale-95 transition-all">
                                     শুরু করুন
                                 </button>
                             </div>
@@ -331,7 +341,7 @@
                     {/* EDIT MODAL */}
                     {isEditing && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
-                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 border border-white/5 shadow-2xl">
+                            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 border border-white/5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
                                 <div className="flex justify-between items-center mb-8">
                                     <h3 className="text-xl font-serif text-amber-100 italic">Customize Content</h3>
                                     <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2 hover:text-white transition-colors">✕</button>
@@ -349,7 +359,7 @@
                                     </div>
                                     <button onClick={() => setIsEditing(false)} 
                                         className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black text-[12px] uppercase shadow-xl active:scale-95 transition-all">
-                                        Save & Apply
+                                        Apply Changes
                                     </button>
                                 </div>
                             </div>
@@ -364,4 +374,3 @@
     </script>
 </body>
 </html>
-
