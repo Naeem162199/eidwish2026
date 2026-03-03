@@ -32,15 +32,6 @@
         .handle-shadow {
             box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
         }
-
-        /* Prevent stretching during capture - forced fixed aspect */
-        .capturing-now {
-            width: 400px !important;
-            height: 500px !important;
-            position: fixed !important;
-            top: -9999px !important;
-            left: -9999px !important;
-        }
     </style>
 </head>
 <body>
@@ -67,71 +58,52 @@
             const [isSaving, setIsSaving] = useState(false);
             const [showStartPopup, setShowStartPopup] = useState(true);
             
-            // Wish Box State
             const [wishScale, setWishScale] = useState(1.1);
             const [wishPos, setWishPos] = useState({ x: 50, y: 30 });
-            
-            // Name Box State
             const [nameScale, setNameScale] = useState(0.9);
             const [namePos, setNamePos] = useState({ x: 75, y: 85 });
             
-            // Interaction State
             const [activeAction, setActiveAction] = useState(null); 
             const cardRef = useRef(null);
             const startRef = useRef({ x: 0, y: 0, initialScale: 1, initialPos: { x: 50, y: 30 } });
 
             const handleDownload = async () => {
+                // Step 1: Straighten the card via state
                 setIsSaving(true);
-                // We give React a moment to render the card in its 'non-rotated' state
+                
+                // Step 2: Allow CSS transition to finish before capturing
                 setTimeout(async () => {
                     try {
                         const canvas = await html2canvas(cardRef.current, {
                             useCORS: true,
-                            scale: 4, // High Resolution output
+                            scale: 3,
                             backgroundColor: null,
-                            logging: false,
-                            // Lock dimensions to prevent any responsive stretching
-                            width: 400,
-                            height: 500,
-                            onclone: (clonedDoc) => {
-                                const clonedCard = clonedDoc.querySelector('.capture-target');
-                                if (clonedCard) {
-                                    clonedCard.style.transform = 'none';
-                                    clonedCard.style.width = '400px';
-                                    clonedCard.style.height = '500px';
-                                }
-                            }
+                            logging: false
                         });
                         const image = canvas.toDataURL("image/png", 1.0);
                         const link = document.createElement('a');
-                        link.download = `EidWish2026_${Date.now()}.png`;
+                        // Updated download file name
+                        link.download = `EidWish2026.png`;
                         link.href = image;
                         link.click();
                     } catch (err) {
                         console.error("Save failed", err);
                     } finally {
+                        // Step 3: Tilt it back
                         setIsSaving(false);
                     }
-                }, 100);
+                }, 400); 
             };
 
             const onInteractionStart = (e, type, target) => {
                 e.stopPropagation();
                 if (e.touches) e.preventDefault();
-                
                 setActiveAction({ type, target });
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                
                 const currentPos = target === 'wish' ? wishPos : namePos;
                 const currentScale = target === 'wish' ? wishScale : nameScale;
-                
-                startRef.current = { 
-                    x: clientX, 
-                    y: clientY, 
-                    initialScale: currentScale, 
-                    initialPos: { ...currentPos } 
-                };
+                startRef.current = { x: clientX, y: clientY, initialScale: currentScale, initialPos: { ...currentPos } };
             };
 
             useEffect(() => {
@@ -159,7 +131,6 @@
                     }
                 };
                 const onInteractionEnd = () => setActiveAction(null);
-
                 if (activeAction) {
                     window.addEventListener('mousemove', onInteractionMove);
                     window.addEventListener('mouseup', onInteractionEnd);
@@ -177,16 +148,14 @@
             return (
                 <div className="flex flex-col h-screen w-full bg-[#0a0806] overflow-hidden text-stone-100 select-none relative">
                     
-                    {/* Desktop Background - Contain & Centered Visibility */}
+                    {/* Background Stall - High visibility on Desktop */}
                     <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center bg-[#0d0a08]">
                         <div 
-                            className="absolute inset-0 bg-no-repeat bg-center bg-cover md:bg-contain opacity-60 scale-105 md:scale-100 transition-opacity duration-700"
+                            className="absolute inset-0 bg-no-repeat bg-center bg-cover md:bg-contain opacity-85 scale-105 md:scale-100"
                             style={{ backgroundImage: 'url("Background.jpg")' }} 
                         />
-                        {/* Overlay to blend padding on sides */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#1a120b]" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#1a120b]" />
                         
-                        {/* Tuni Bulbs */}
                         <div className="absolute top-4 left-0 w-full flex justify-around opacity-70 z-10">
                             {[...Array(12)].map((_, i) => (
                                 <div key={i} className="w-1.5 h-1.5 bg-amber-400 rounded-full blur-[1px] animate-pulse" />
@@ -197,11 +166,11 @@
                     {/* Header - Centered Branding */}
                     <header className="relative z-30 p-6 flex flex-col items-center justify-center gap-2">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-lg">
                                 <img src="logo1.png" alt="Logo 1" className="w-full h-full object-contain p-1" />
                             </div>
-                            <span className="text-amber-500 font-serif italic text-2xl">&</span>
-                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden">
+                            <span className="text-amber-500 font-serif italic text-2xl drop-shadow-md">&</span>
+                            <div className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-lg">
                                 <img src="logo2.png" alt="Logo 2" className="w-full h-full object-contain p-1" />
                             </div>
                         </div>
@@ -210,7 +179,7 @@
                             <h1 className="text-[10px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase">Eid Wish 2026</h1>
                         </div>
 
-                        {/* Edit Button with Text below */}
+                        {/* Edit Button with Label */}
                         <div className="absolute top-6 right-6 flex flex-col items-center gap-1">
                             <button 
                                 onClick={() => setIsEditing(true)} 
@@ -218,22 +187,19 @@
                             >
                                 <i data-lucide="pen-tool" className="w-5 h-5"></i>
                             </button>
-                            <span className="text-[9px] uppercase font-bold text-amber-500 tracking-widest drop-shadow-md">Edit</span>
+                            <span className="text-[10px] uppercase font-bold text-amber-500 tracking-widest drop-shadow-lg">Edit</span>
                         </div>
                     </header>
 
-                    {/* Stage */}
+                    {/* Stage - Straightens during capture */}
                     <main className="relative flex-1 flex flex-col items-center justify-center z-10 p-6 overflow-visible">
                         <div 
                             ref={cardRef}
                             style={{ 
-                                transform: isSaving ? 'none' : 'rotate(20deg)', 
-                                // Temporarily force exact px for save
-                                width: isSaving ? '400px' : '100%',
-                                height: isSaving ? '500px' : 'auto',
-                                transition: isSaving ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                                transform: isSaving ? 'none' : 'rotate(20deg)',
+                                transition: 'transform 0.4s ease'
                             }}
-                            className={`relative w-full max-w-[300px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden capture-target`}
+                            className="relative w-full max-w-[300px] aspect-[4/5] bg-stone-900 rounded-sm shadow-[30px_50px_80px_rgba(0,0,0,0.7)] overflow-hidden"
                         >
                             <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
@@ -251,7 +217,7 @@
                                     <div 
                                         onMouseDown={(e) => onInteractionStart(e, 'drag', 'wish')}
                                         onTouchStart={(e) => onInteractionStart(e, 'drag', 'wish')}
-                                        className="bg-white/95 px-5 py-3 rounded shadow-xl flex flex-col items-center min-w-[140px] cursor-move transition-shadow hover:shadow-2xl border border-transparent hover:border-amber-500/30"
+                                        className="bg-white/95 px-5 py-3 rounded shadow-xl flex flex-col items-center min-w-[140px] cursor-move border border-transparent hover:border-amber-500/30"
                                     >
                                         <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">
                                             {userWish || "Eid Mubarak"}
@@ -279,7 +245,7 @@
                                     <div 
                                         onMouseDown={(e) => onInteractionStart(e, 'drag', 'name')}
                                         onTouchStart={(e) => onInteractionStart(e, 'drag', 'name')}
-                                        className="bg-white/95 px-4 py-2 rounded shadow-xl flex flex-col items-start min-w-[100px] cursor-move transition-shadow hover:shadow-2xl border border-transparent hover:border-amber-500/30"
+                                        className="bg-white/95 px-4 py-2 rounded shadow-xl flex flex-col items-start min-w-[100px] cursor-move border border-transparent hover:border-amber-500/30"
                                     >
                                         <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
                                         <p className="text-stone-900 font-serif text-xs italic">
@@ -303,11 +269,11 @@
                             className="mt-14 bg-white/10 text-white px-10 py-4 rounded-full font-black shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[10px] tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all"
                         >
                             <i data-lucide="download" className="w-4 h-4 text-amber-400"></i>
-                            {isSaving ? 'Processing...' : 'Download Card'}
+                            {isSaving ? 'Straightening...' : 'Download Card'}
                         </button>
                     </main>
 
-                    {/* Footer Carousel */}
+                    {/* Carousel */}
                     <div className="relative z-20 pb-10 bg-gradient-to-t from-[#0a0806] via-[#0a0806]/95 to-transparent">
                         <div className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center">
                             <div className="flex space-x-4">
@@ -329,7 +295,7 @@
                         </p>
                     </div>
 
-                    {/* Start Popup - Bengali Nostalgia */}
+                    {/* Pop-up - Bengali Nostalgia Restored */}
                     {showStartPopup && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-500 font-bangla">
                             <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-10 border border-white/5 shadow-2xl text-center relative overflow-hidden">
@@ -403,9 +369,6 @@
                                             className="w-full h-1.5 bg-stone-800 rounded-full appearance-none cursor-pointer accent-amber-500" 
                                         />
                                     </div>
-
-                                    <p className="text-[9px] text-stone-600 italic text-center leading-relaxed">Tip: Drag boxes or handles directly on the card to move and resize.</p>
-
                                     <button 
                                         onClick={() => setIsEditing(false)} 
                                         className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black text-[10px] uppercase shadow-xl hover:bg-amber-400 active:scale-95 transition-all"
