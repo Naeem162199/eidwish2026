@@ -155,7 +155,7 @@
         if (window.lucide) window.lucide.createIcons();
       }, [showSplash, isEditing, isSaving]);
 
-      // ✅ FIX: capture the hidden export node so UI never flashes/tiles on mobile
+      // ✅ capture the hidden export node so UI never flashes/tiles on mobile
       const handleDownload = async () => {
         setIsSaving(true);
 
@@ -279,7 +279,7 @@
                 <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
-                {/* WISH BOX */}
+                {/* WISH BOX — UPDATED (dark translucent + white text) */}
                 <div
                   onMouseDown={(e) => handleStart('Wish', 'drag', e)}
                   onTouchStart={(e) => handleStart('Wish', 'drag', e)}
@@ -289,10 +289,10 @@
                     transform: `translate(-50%, -50%) scale(${wishScale})`,
                     cursor: isSaving ? 'default' : (activeAction === 'dragWish' ? 'grabbing' : 'grab')
                   }}
-                  className={`absolute z-30 pointer-events-auto bg-white/95 px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[120px] md:min-w-[140px] group touch-none ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
+                  className={`absolute z-30 pointer-events-auto bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[120px] md:min-w-[140px] group touch-none border border-white/20 ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
                 >
-                  <p className="text-stone-900 font-serif text-[11px] md:text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
-                  <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
+                  <p className="text-white font-serif text-[11px] md:text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
+                  <div className="w-full border-b border-dotted border-white/40 mt-2"></div>
 
                   {/* Resize Icon - HIDDEN ON SAVE */}
                   {!isSaving && (
@@ -306,7 +306,7 @@
                   )}
                 </div>
 
-                {/* NAME BOX */}
+                {/* NAME BOX — UPDATED (dark translucent + white text) */}
                 <div
                   onMouseDown={(e) => handleStart('Name', 'drag', e)}
                   onTouchStart={(e) => handleStart('Name', 'drag', e)}
@@ -316,11 +316,11 @@
                     transform: `translate(-50%, -50%) scale(${nameScale})`,
                     cursor: isSaving ? 'default' : (activeAction === 'dragName' ? 'grabbing' : 'grab')
                   }}
-                  className={`absolute z-30 pointer-events-auto bg-white/95 px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[80px] md:min-w-[100px] group touch-none ${activeAction?.includes('Name') ? 'ring-2 ring-amber-500' : ''}`}
+                  className={`absolute z-30 pointer-events-auto bg-black/55 backdrop-blur-md px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[80px] md:min-w-[100px] group touch-none border border-white/20 ${activeAction?.includes('Name') ? 'ring-2 ring-amber-500' : ''}`}
                 >
-                  <p className="text-[8px] md:text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
-                  <p className="text-stone-900 font-serif text-[10px] md:text-xs italic">{userName || "Your Name"}</p>
-                  <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
+                  <p className="text-[8px] md:text-[10px] text-white/70 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
+                  <p className="text-white font-serif text-[10px] md:text-xs italic">{userName || "Your Name"}</p>
+                  <div className="w-full border-b border-dotted border-white/40 mt-1"></div>
 
                   {/* Resize Icon - HIDDEN ON SAVE */}
                   {!isSaving && (
@@ -344,37 +344,37 @@
                 {isSaving ? 'Processing...' : 'Download Card'}
               </button>
 
-              {/* HIDDEN EXPORT CARD (fixed 800x1000) — prevents mobile tiling/flash */}
+              {/* HIDDEN EXPORT CARD (fixed 800x1000) — matches UI styling */}
               <div ref={exportRef} className="capture-area export-wrapper" aria-hidden="true">
                 <div className="relative w-full h-full bg-stone-900 overflow-hidden border border-white/5">
                   <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
-                  {/* WISH BOX (export version; no resize icon) */}
+                  {/* WISH BOX (export) — UPDATED */}
                   <div
                     style={{
                       left: `${wishPos.x}%`,
                       top: `${wishPos.y}%`,
                       transform: `translate(-50%, -50%) scale(${wishScale})`
                     }}
-                    className="absolute z-30 bg-white/95 px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px]"
+                    className="absolute z-30 bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] border border-white/20"
                   >
-                    <p className="text-stone-900 font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
-                    <div className="w-full border-b border-dotted border-stone-400 mt-2"></div>
+                    <p className="text-white font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
+                    <div className="w-full border-b border-dotted border-white/40 mt-2"></div>
                   </div>
 
-                  {/* NAME BOX (export version; no resize icon) */}
+                  {/* NAME BOX (export) — UPDATED */}
                   <div
                     style={{
                       left: `${namePos.x}%`,
                       top: `${namePos.y}%`,
                       transform: `translate(-50%, -50%) scale(${nameScale})`
                     }}
-                    className="absolute z-30 bg-white/95 px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[110px]"
+                    className="absolute z-30 bg-black/55 backdrop-blur-md px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[110px] border border-white/20"
                   >
-                    <p className="text-[10px] text-stone-400 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
-                    <p className="text-stone-900 font-serif text-xs italic">{userName || "Your Name"}</p>
-                    <div className="w-full border-b border-dotted border-stone-400 mt-1"></div>
+                    <p className="text-[10px] text-white/70 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
+                    <p className="text-white font-serif text-xs italic">{userName || "Your Name"}</p>
+                    <div className="w-full border-b border-dotted border-white/40 mt-1"></div>
                   </div>
                 </div>
               </div>
@@ -483,4 +483,3 @@
   </script>
 </body>
 </html>
-
