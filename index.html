@@ -155,37 +155,83 @@
         if (window.lucide) window.lucide.createIcons();
       }, [showSplash, isEditing, isSaving]);
 
+      // Canva-style export stability helpers: wait for fonts + images + layout frames
+      const waitNextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+      const waitImagesInNode = async (node) => {
+        const imgs = Array.from(node.querySelectorAll("img"));
+        await Promise.all(
+          imgs.map(async (img) => {
+            try {
+              if (!img) return;
+              if (img.complete && img.naturalWidth > 0) {
+                if (img.decode) await img.decode().catch(() => {});
+                return;
+              }
+              await new Promise((resolve) => {
+                const done = () => { cleanup(); resolve(); };
+                const cleanup = () => {
+                  img.removeEventListener("load", done);
+                  img.removeEventListener("error", done);
+                };
+                img.addEventListener("load", done, { once: true });
+                img.addEventListener("error", done, { once: true });
+              });
+              if (img.decode) await img.decode().catch(() => {});
+            } catch (e) {}
+          })
+        );
+      };
+
       // ✅ capture the hidden export node so UI never flashes/tiles on mobile
+      // ✅ make export match UI resizing by using identical typography + widths
+      // ✅ canva-style: wait for fonts/images + lock capture dimensions
       const handleDownload = async () => {
         setIsSaving(true);
 
-        setTimeout(async () => {
-          try {
-            const node = exportRef.current;
-            if (!node) throw new Error("Export node missing");
+        try {
+          const node = exportRef.current;
+          if (!node) throw new Error("Export node missing");
 
-            const rect = node.getBoundingClientRect();
+          // Let React paint any last state updates
+          await waitNextFrame();
+          await waitNextFrame();
 
-            const canvas = await html2canvas(node, {
-              useCORS: true,
-              scale: 3,
-              backgroundColor: null, // keep PNG transparent; set "#000" if you want solid bg
-              logging: false,
-              width: Math.round(rect.width),
-              height: Math.round(rect.height),
-            });
-
-            const image = canvas.toDataURL("image/png", 1.0);
-            const link = document.createElement('a');
-            link.download = `EidWish2026.png`;
-            link.href = image;
-            link.click();
-          } catch (err) {
-            console.error("Save failed", err);
-          } finally {
-            setIsSaving(false);
+          // Wait for fonts (important for Bengali + serif)
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready.catch(() => {});
           }
-        }, 80);
+
+          // Ensure export node images are loaded/decoded
+          await waitImagesInNode(node);
+
+          // Lock capture size (guarantees no stretch)
+          const targetW = 800;
+          const targetH = 1000;
+
+          const canvas = await html2canvas(node, {
+            useCORS: true,
+            scale: 3,
+            backgroundColor: null, // keep PNG transparent; set "#000" if you want solid bg
+            logging: false,
+            width: targetW,
+            height: targetH,
+            windowWidth: targetW,
+            windowHeight: targetH,
+            scrollX: 0,
+            scrollY: 0,
+            removeContainer: true,
+          });
+
+          const image = canvas.toDataURL("image/png", 1.0);
+          const link = document.createElement('a');
+          link.download = `EidWish2026.png`;
+          link.href = image;
+          link.click();
+        } catch (err) {
+          console.error("Save failed", err);
+        } finally {
+          setIsSaving(false);
+        }
       };
 
       const handleStart = (type, action, e) => {
@@ -267,7 +313,7 @@
             {/* Main Stage */}
             <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 overflow-visible min-h-0">
 
-              {/* VISIBLE CARD (UI) — unchanged */}
+              {/* VISIBLE CARD (UI) */}
               <div
                 ref={cardRef}
                 style={{
@@ -279,7 +325,7 @@
                 <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
-                {/* WISH BOX — UPDATED (dark translucent + white text) */}
+                {/* WISH BOX — dark translucent + white text */}
                 <div
                   onMouseDown={(e) => handleStart('Wish', 'drag', e)}
                   onTouchStart={(e) => handleStart('Wish', 'drag', e)}
@@ -306,7 +352,7 @@
                   )}
                 </div>
 
-                {/* NAME BOX — UPDATED (dark translucent + white text) */}
+                {/* NAME BOX — dark translucent + white text */}
                 <div
                   onMouseDown={(e) => handleStart('Name', 'drag', e)}
                   onTouchStart={(e) => handleStart('Name', 'drag', e)}
@@ -344,36 +390,36 @@
                 {isSaving ? 'Processing...' : 'Download Card'}
               </button>
 
-              {/* HIDDEN EXPORT CARD (fixed 800x1000) — matches UI styling */}
+              {/* HIDDEN EXPORT CARD (fixed 800x1000) — MUST MATCH UI CLASSES 1:1 */}
               <div ref={exportRef} className="capture-area export-wrapper" aria-hidden="true">
                 <div className="relative w-full h-full bg-stone-900 overflow-hidden border border-white/5">
                   <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
-                  {/* WISH BOX (export) — UPDATED */}
+                  {/* WISH BOX (export) — SAME AS UI (no resize icon) */}
                   <div
                     style={{
                       left: `${wishPos.x}%`,
                       top: `${wishPos.y}%`,
                       transform: `translate(-50%, -50%) scale(${wishScale})`
                     }}
-                    className="absolute z-30 bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[140px] border border-white/20"
+                    className="absolute z-30 bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[120px] md:min-w-[140px] border border-white/20"
                   >
-                    <p className="text-white font-serif text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
+                    <p className="text-white font-serif text-[11px] md:text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
                     <div className="w-full border-b border-dotted border-white/40 mt-2"></div>
                   </div>
 
-                  {/* NAME BOX (export) — UPDATED */}
+                  {/* NAME BOX (export) — SAME AS UI (no resize icon) */}
                   <div
                     style={{
                       left: `${namePos.x}%`,
                       top: `${namePos.y}%`,
                       transform: `translate(-50%, -50%) scale(${nameScale})`
                     }}
-                    className="absolute z-30 bg-black/55 backdrop-blur-md px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[110px] border border-white/20"
+                    className="absolute z-30 bg-black/55 backdrop-blur-md px-3 py-2 md:px-4 md:py-2 rounded shadow-2xl flex flex-col items-start min-w-[80px] md:min-w-[100px] border border-white/20"
                   >
-                    <p className="text-[10px] text-white/70 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
-                    <p className="text-white font-serif text-xs italic">{userName || "Your Name"}</p>
+                    <p className="text-[8px] md:text-[10px] text-white/70 uppercase tracking-tighter mb-0.5">Best Wishes,</p>
+                    <p className="text-white font-serif text-[10px] md:text-xs italic">{userName || "Your Name"}</p>
                     <div className="w-full border-b border-dotted border-white/40 mt-1"></div>
                   </div>
                 </div>
