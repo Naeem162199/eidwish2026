@@ -19,23 +19,17 @@
 
     body {
       font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
-      margin: 0;
-      background: #000;
-      height: 100vh;
-      overflow: hidden;
-      /* Block default touch scroll/zoom on body so drag is never interrupted */
+      margin: 0; background: #000;
+      height: 100vh; overflow: hidden;
       touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
+      -webkit-user-select: none; user-select: none;
     }
 
     .font-serif   { font-family: 'Playfair Display', serif; }
     .font-bengali { font-family: 'Noto Sans Bengali', sans-serif; }
-
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* ── Background ── */
     .fixed-bg {
       position: fixed; inset: 0;
       background: url("Background.jpg") center / cover no-repeat;
@@ -45,7 +39,6 @@
       .fixed-bg { background-image: url("background desktop.jpg"); }
     }
 
-    /* ── App shell ── */
     .app-shell {
       width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center;
@@ -65,15 +58,36 @@
       }
     }
 
-    /* ── Card wrapper
-       IMPORTANT: touch-action:none here so iOS never intercepts the drag.
-       overflow is NOT hidden here — clipping happens on .card-inner only. ── */
-    .card-wrapper {
-      position: relative;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
+    /*
+      COORDINATE SYSTEM EXPLAINED
+      ───────────────────────────
+      namePos {x, y} are percentages of the CARD INNER dimensions (width × height).
+      nameScale is also relative to the card inner size via BADGE_BASE_PX.
+
+      .card-outer  → has the visual rotate(3deg) tilt. Never used for hit-testing.
+      .card-inner  → ref'd as cardInnerRef. getBoundingClientRect() on this gives
+                     the true unrotated pixel size we do all math against.
+                     overflow:hidden clips the design image.
+
+      On export we place the badge using the same % against 1024×1536,
+      and scale the badge by (exportW / cardInnerWidth) so it appears
+      the same relative size as on screen.
+    */
+
+    /* Outer tilt wrapper — purely decorative, never used for coords */
+    .card-outer {
+      width: 100%;
+      transform: rotate(3deg);
+      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease;
+      box-shadow: 20px 36px 60px rgba(0,0,0,0.75);
+      border-radius: 4px;
     }
+    .card-outer:hover {
+      transform: rotate(0deg) scale(1.01);
+      box-shadow: 28px 44px 80px rgba(0,0,0,0.85);
+    }
+
+    /* Inner card — this is our coordinate reference */
     .card-inner {
       position: relative;
       width: 100%;
@@ -81,16 +95,10 @@
       border-radius: 4px;
       background: #1c1917;
       border: 1px solid rgba(255,255,255,0.05);
-      box-shadow: 20px 36px 60px rgba(0,0,0,0.75);
-      transform: rotate(3deg);
-      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease;
-    }
-    .card-inner:hover {
-      transform: rotate(0deg) scale(1.01);
-      box-shadow: 28px 44px 80px rgba(0,0,0,0.85);
+      touch-action: none;
+      -webkit-user-select: none; user-select: none;
     }
 
-    /* ── Name badge ── */
     .name-badge {
       position: absolute;
       z-index: 30;
@@ -101,18 +109,17 @@
       border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.22);
       box-shadow: 0 8px 28px rgba(0,0,0,0.55);
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      display: flex; flex-direction: column; align-items: flex-start;
       min-width: 110px;
       touch-action: none;
       cursor: grab;
       will-change: transform;
-      /* Make tap target large enough for phones */
       -webkit-tap-highlight-color: transparent;
+      /* transform-origin must stay top-left so % position + translate(-50%,-50%) is stable */
+      transform-origin: center center;
     }
-    .name-badge.dragging  { cursor: grabbing; }
-    .name-badge.active    { outline: 2px solid #f59e0b; outline-offset: 2px; }
+    .name-badge.dragging { cursor: grabbing; }
+    .name-badge.active   { outline: 2px solid #f59e0b; outline-offset: 2px; }
 
     .resize-handle {
       position: absolute;
@@ -128,24 +135,21 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ── Export stage (off-screen) ── */
+    /* Export stage — fixed off-screen, exact export dimensions */
     #export-stage {
       position: fixed;
-      top: -9999px; left: 0;
-      width: 800px; height: 1000px;
+      top: -99999px; left: -99999px;
+      width: 1024px; height: 1536px;
       overflow: hidden;
       pointer-events: none;
       z-index: -999;
     }
 
-    /* ── Saving overlay ── */
     .saving-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      background: rgba(0,0,0,.72);
-      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,.72); backdrop-filter: blur(10px);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 16px;
-      color: #fff;
+      align-items: center; justify-content: center; gap: 16px; color: #fff;
     }
     .saving-spinner {
       width: 48px; height: 48px;
@@ -156,49 +160,33 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Customize button — subtle bounce ── */
     @keyframes subtle-bounce {
       0%, 100% { transform: translateY(0)    scale(1);    }
       35%       { transform: translateY(-5px) scale(1.05); }
       65%       { transform: translateY(-2px) scale(1.02); }
       82%       { transform: translateY(-3px) scale(1.03); }
     }
-    .btn-bounce {
-      animation: subtle-bounce 2.6s ease-in-out infinite;
-      display: inline-block;
-    }
-    .btn-bounce:active {
-      animation: none;
-      transform: scale(0.95) !important;
-    }
+    .btn-bounce { animation: subtle-bounce 2.6s ease-in-out infinite; display: inline-block; }
+    .btn-bounce:active { animation: none; transform: scale(0.95) !important; }
 
-    /* ── Pulse ring behind Customize button ── */
     @keyframes ring-pulse {
       0%   { transform: scale(1);   opacity: 0.65; }
       70%  { transform: scale(1.6); opacity: 0;    }
       100% { transform: scale(1.6); opacity: 0;    }
     }
     .btn-pulse-wrapper {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      position: relative; display: inline-flex;
+      align-items: center; justify-content: center;
     }
-    .btn-pulse-wrapper::before,
-    .btn-pulse-wrapper::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 9999px;
-      background: rgba(245, 158, 11, 0.4);
-      animation: ring-pulse 2.6s ease-out infinite;
-      pointer-events: none;
+    .btn-pulse-wrapper::before, .btn-pulse-wrapper::after {
+      content: ''; position: absolute; inset: 0;
+      border-radius: 9999px; background: rgba(245,158,11,0.4);
+      animation: ring-pulse 2.6s ease-out infinite; pointer-events: none;
     }
     .btn-pulse-wrapper::after { animation-delay: 1.3s; }
 
-    /* Re-allow scroll/input inside modals */
-    .modal-scroll        { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-    .allow-text-input    { touch-action: auto; user-select: text; -webkit-user-select: text; }
+    .modal-scroll     { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+    .allow-text-input { touch-action: auto; user-select: text; -webkit-user-select: text; }
   </style>
 </head>
 
@@ -209,16 +197,27 @@
 <script type="text/babel">
   const { useState, useRef, useEffect, useCallback } = React;
 
-  /* ── Constants ── */
-  const CEEVIT_LOGO_URL = "Trumega.png";
+  const LOGO_URL    = "Trumega.png";
+  const EXPORT_W    = 1024;
+  const EXPORT_H    = 1536;
+
+  /*
+    BADGE_BASE_PX: the font-size (px) used in the badge when nameScale === 1.
+    Both the UI badge and the export badge must use the same base size.
+    Scale is then applied on top. This ensures the badge looks proportionally
+    identical on a 300px-wide card and an 800px-wide export.
+  */
+  const BADGE_BASE_FONT = 13;   // name text px
+  const BADGE_BASE_LABEL = 10;  // "Best Wishes," label px
+
   const EID_DESIGNS = [
-    { id: 1, name: 'Design 1', image: '1.png' },
-    { id: 2, name: 'Design 2', image: '2.png' },
-    { id: 3, name: 'Design 3', image: '3.png' },
-    { id: 4, name: 'Design 4', image: '4.png' },
-    { id: 5, name: 'Design 5', image: '5.png' },
-    { id: 6, name: 'Design 6', image: '6.png' },
-    { id: 7, name: 'Design 7', image: '7.png' },
+    { id:1, name:'Design 1', image:'1.png' },
+    { id:2, name:'Design 2', image:'2.png' },
+    { id:3, name:'Design 3', image:'3.png' },
+    { id:4, name:'Design 4', image:'4.png' },
+    { id:5, name:'Design 5', image:'5.png' },
+    { id:6, name:'Design 6', image:'6.png' },
+    { id:7, name:'Design 7', image:'7.png' },
   ];
 
   const raf2 = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -226,30 +225,36 @@
   async function waitForImages(node) {
     const imgs = [...node.querySelectorAll('img')];
     await Promise.all(imgs.map(img => new Promise(resolve => {
-      if (img.complete && img.naturalWidth > 0) {
-        img.decode?.().catch(() => {}).finally(resolve);
-        return;
-      }
-      img.addEventListener('load',  () => img.decode?.().catch(() => {}).finally(resolve), { once: true });
+      if (img.complete && img.naturalWidth > 0) { img.decode?.().catch(()=>{}).finally(resolve); return; }
+      img.addEventListener('load',  () => img.decode?.().catch(()=>{}).finally(resolve), { once: true });
       img.addEventListener('error', resolve, { once: true });
     })));
   }
 
-  /* ── Pixel-perfect export DOM — plain inline styles, no Tailwind ── */
-  function buildExportNode(design, userName, namePos, nameScale) {
-    const W = 800, H = 1000;
+  /*
+    buildExportNode
+    ───────────────
+    namePos  : { x, y } percentages (0–100) of card dimensions
+    nameScale: scale factor as set by user on UI
+    cardW    : actual rendered width (px) of .card-inner on screen
+
+    The badge in the export is scaled so it appears the same
+    *relative* size as on screen:
+      exportScale = nameScale × (EXPORT_W / cardW)
+  */
+  function buildExportNode(design, userName, namePos, nameScale, cardW) {
     const stage = document.getElementById('export-stage');
     stage.innerHTML = '';
 
     const card = document.createElement('div');
     Object.assign(card.style, {
-      position: 'relative', width: W + 'px', height: H + 'px',
+      position: 'relative',
+      width: EXPORT_W + 'px', height: EXPORT_H + 'px',
       overflow: 'hidden', background: '#1c1917',
     });
 
     const img = document.createElement('img');
-    img.src = design.image;
-    img.crossOrigin = 'anonymous';
+    img.src = design.image; img.crossOrigin = 'anonymous';
     Object.assign(img.style, {
       position: 'absolute', inset: '0',
       width: '100%', height: '100%', objectFit: 'cover',
@@ -263,47 +268,47 @@
     });
     card.appendChild(tex);
 
+    /* Scale compensation: make badge same relative size as on screen */
+    const sizeRatio   = cardW > 0 ? EXPORT_W / cardW : 1;
+    const exportScale = nameScale * sizeRatio;
+
     const badge = document.createElement('div');
     Object.assign(badge.style, {
-      position: 'absolute',
-      left: `${(namePos.x / 100) * W}px`,
-      top:  `${(namePos.y / 100) * H}px`,
-      transform: `translate(-50%, -50%) scale(${nameScale})`,
+      position:        'absolute',
+      left:            `${(namePos.x / 100) * EXPORT_W}px`,
+      top:             `${(namePos.y / 100) * EXPORT_H}px`,
+      transform:       `translate(-50%, -50%) scale(${exportScale})`,
       transformOrigin: 'center center',
-      background: 'rgba(0,0,0,0.60)',
-      backdropFilter: 'blur(8px)',
+      background:      'rgba(0,0,0,0.60)',
+      backdropFilter:  'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
-      padding: '12px 18px',
-      borderRadius: '8px',
-      border: '1px solid rgba(255,255,255,0.22)',
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-      minWidth: '130px',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      padding:         '10px 16px',
+      borderRadius:    '8px',
+      border:          '1px solid rgba(255,255,255,0.22)',
+      display:         'flex', flexDirection: 'column', alignItems: 'flex-start',
+      minWidth:        '110px',
+      boxShadow:       '0 8px 32px rgba(0,0,0,0.6)',
     });
 
     const label = document.createElement('p');
     label.textContent = 'Best Wishes,';
     Object.assign(label.style, {
-      margin: '0 0 4px', fontSize: '11px', lineHeight: '1.2',
+      margin: `0 0 3px`, fontSize: BADGE_BASE_LABEL + 'px', lineHeight: '1.2',
       color: 'rgba(255,255,255,0.70)',
       fontFamily: "'Inter', sans-serif",
-      textTransform: 'uppercase', letterSpacing: '0.05em',
+      textTransform: 'uppercase', letterSpacing: '0.04em',
     });
 
     const name = document.createElement('p');
     name.textContent = userName || 'Your Name';
     Object.assign(name.style, {
-      margin: '0', fontSize: '15px', lineHeight: '1.3',
-      color: '#fff',
-      fontFamily: "'Playfair Display', serif",
-      fontStyle: 'italic',
+      margin: '0', fontSize: BADGE_BASE_FONT + 'px', lineHeight: '1.3',
+      color: '#fff', fontFamily: "'Playfair Display', serif", fontStyle: 'italic',
     });
 
     const divider = document.createElement('div');
     Object.assign(divider.style, {
-      width: '100%',
-      borderBottom: '1px dotted rgba(255,255,255,0.40)',
-      marginTop: '8px',
+      width: '100%', borderBottom: '1px dotted rgba(255,255,255,0.38)', marginTop: '7px',
     });
 
     badge.appendChild(label);
@@ -314,7 +319,7 @@
     return card;
   }
 
-  /* ════════════════ App ════════════════ */
+  /* ═══════════════ App ═══════════════ */
   const App = () => {
     const [selectedDesign, setSelectedDesign] = useState(EID_DESIGNS[0]);
     const [userName,       setUserName]        = useState('');
@@ -326,8 +331,12 @@
     const [nameScale,    setNameScale]    = useState(0.8);
     const [activeAction, setActiveAction] = useState(null);
 
-    const cardWrapperRef = useRef(null);
-    const dragRef        = useRef(null);
+    /*
+      cardInnerRef → the UNROTATED inner card element.
+      All drag math uses this rect so rotation never pollutes coordinates.
+    */
+    const cardInnerRef = useRef(null);
+    const dragRef      = useRef(null);
 
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
@@ -336,18 +345,23 @@
       if (isSaving) return;
       setIsSaving(true);
       try {
-        const node = buildExportNode(selectedDesign, userName, namePos, nameScale);
+        /* Read the actual rendered width of the unrotated card */
+        const cardW = cardInnerRef.current
+          ? cardInnerRef.current.getBoundingClientRect().width
+          : 300;
+
+        const node = buildExportNode(selectedDesign, userName, namePos, nameScale, cardW);
         await raf2();
         await document.fonts.ready.catch(() => {});
         await waitForImages(node);
         await raf2();
 
         const canvas = await html2canvas(node, {
-          useCORS: true, allowTaint: false, scale: 2,
+          useCORS: true, allowTaint: false, scale: 1,
           backgroundColor: null, logging: false,
-          width: 800, height: 1000,
+          width: EXPORT_W, height: EXPORT_H,
           x: 0, y: 0, scrollX: 0, scrollY: 0,
-          windowWidth: 800, windowHeight: 1000,
+          windowWidth: EXPORT_W, windowHeight: EXPORT_H,
         });
 
         canvas.toBlob(blob => {
@@ -365,10 +379,9 @@
     }, [selectedDesign, userName, namePos, nameScale, isSaving]);
 
     /* ══════════════════════════════════
-       DRAG & RESIZE  — native touch
-       All listeners added to window with
-       passive:false so e.preventDefault()
-       actually blocks iOS scroll.
+       DRAG & RESIZE
+       Uses cardInnerRef (unrotated) for
+       accurate coordinate math on mobile.
     ══════════════════════════════════ */
     const startInteraction = useCallback((action, clientX, clientY) => {
       dragRef.current = {
@@ -382,8 +395,10 @@
 
     const onPointerMove = useCallback((clientX, clientY) => {
       const d = dragRef.current;
-      if (!d || !cardWrapperRef.current) return;
-      const rect = cardWrapperRef.current.getBoundingClientRect();
+      if (!d || !cardInnerRef.current) return;
+
+      /* Use the inner card (not the outer tilted wrapper) for rect */
+      const rect = cardInnerRef.current.getBoundingClientRect();
       const dx   = clientX - d.startX;
       const dy   = clientY - d.startY;
 
@@ -404,44 +419,27 @@
 
     useEffect(() => {
       if (!activeAction) return;
-
       const onTM = (e) => { e.preventDefault(); onPointerMove(e.touches[0].clientX, e.touches[0].clientY); };
       const onMM = (e) => onPointerMove(e.clientX, e.clientY);
 
-      window.addEventListener('touchmove',   onTM, { passive: false });
-      window.addEventListener('touchend',    endInteraction);
-      window.addEventListener('touchcancel', endInteraction);
-      window.addEventListener('mousemove',   onMM);
-      window.addEventListener('mouseup',     endInteraction);
-
+      window.addEventListener('touchmove',    onTM, { passive: false });
+      window.addEventListener('touchend',     endInteraction);
+      window.addEventListener('touchcancel',  endInteraction);
+      window.addEventListener('mousemove',    onMM);
+      window.addEventListener('mouseup',      endInteraction);
       return () => {
-        window.removeEventListener('touchmove',   onTM);
-        window.removeEventListener('touchend',    endInteraction);
-        window.removeEventListener('touchcancel', endInteraction);
-        window.removeEventListener('mousemove',   onMM);
-        window.removeEventListener('mouseup',     endInteraction);
+        window.removeEventListener('touchmove',    onTM);
+        window.removeEventListener('touchend',     endInteraction);
+        window.removeEventListener('touchcancel',  endInteraction);
+        window.removeEventListener('mousemove',    onMM);
+        window.removeEventListener('mouseup',      endInteraction);
       };
     }, [activeAction, onPointerMove, endInteraction]);
 
-    /* Badge start handlers */
-    const onBadgeTouchStart = useCallback((e) => {
-      e.stopPropagation(); e.preventDefault();
-      startInteraction('drag', e.touches[0].clientX, e.touches[0].clientY);
-    }, [startInteraction]);
-    const onBadgeMouseDown = useCallback((e) => {
-      e.stopPropagation();
-      startInteraction('drag', e.clientX, e.clientY);
-    }, [startInteraction]);
-
-    /* Resize handle start handlers */
-    const onResizeTouchStart = useCallback((e) => {
-      e.stopPropagation(); e.preventDefault();
-      startInteraction('resize', e.touches[0].clientX, e.touches[0].clientY);
-    }, [startInteraction]);
-    const onResizeMouseDown = useCallback((e) => {
-      e.stopPropagation();
-      startInteraction('resize', e.clientX, e.clientY);
-    }, [startInteraction]);
+    const onBadgeTouchStart  = useCallback((e) => { e.stopPropagation(); e.preventDefault(); startInteraction('drag',   e.touches[0].clientX, e.touches[0].clientY); }, [startInteraction]);
+    const onBadgeMouseDown   = useCallback((e) => { e.stopPropagation(); startInteraction('drag',   e.clientX, e.clientY); }, [startInteraction]);
+    const onResizeTouchStart = useCallback((e) => { e.stopPropagation(); e.preventDefault(); startInteraction('resize', e.touches[0].clientX, e.touches[0].clientY); }, [startInteraction]);
+    const onResizeMouseDown  = useCallback((e) => { e.stopPropagation(); startInteraction('resize', e.clientX, e.clientY); }, [startInteraction]);
 
     return (
       <div className="app-shell">
@@ -451,10 +449,9 @@
 
           {/* ── Header ── */}
           <header className="pt-4 md:pt-6 pb-2 flex flex-col items-center gap-1 md:gap-2 flex-shrink-0">
-
             <div className="w-[80px] md:w-[100px] aspect-[4/3] bg-white rounded-xl md:rounded-2xl
               flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
-              <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-1.5" alt="Ceevit Logo" />
+              <img src={LOGO_URL} className="w-full h-full object-contain p-1.5" alt="Logo" />
             </div>
 
             <div className="bg-black/40 backdrop-blur-md px-6 py-1 rounded-full border border-white/5 shadow-lg mt-1">
@@ -463,7 +460,6 @@
               </h1>
             </div>
 
-            {/* Bouncing Customize button with pulse ring */}
             <div className="btn-pulse-wrapper mt-2">
               <button
                 onClick={() => setIsEditing(true)}
@@ -479,14 +475,19 @@
           {/* ── Main Stage ── */}
           <main className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 pb-2 overflow-visible min-h-0">
 
-            {/* Card wrapper — touch-action:none so no scroll interruption */}
+            {/*
+              .card-outer → visual rotate tilt only, no ref, no coord math
+              .card-inner → ref for measurements, overflow:hidden for image clipping
+            */}
             <div
-              ref={cardWrapperRef}
-              className="card-wrapper w-full mx-auto"
-              style={{ maxHeight: 'min(50vh, calc(100vw * 1.25))', aspectRatio: '4/5' }}
+              className="card-outer w-full mx-auto"
+              style={{ maxHeight: 'min(55vh, calc(100vw * 1.5))', aspectRatio: '2/3' }}
             >
-              <div className="card-inner" style={{ aspectRatio: '4/5' }}>
-
+              <div
+                ref={cardInnerRef}
+                className="card-inner"
+                style={{ aspectRatio: '2/3' }}
+              >
                 <img
                   src={selectedDesign.image}
                   crossOrigin="anonymous"
@@ -495,15 +496,12 @@
                   alt={selectedDesign.name}
                 />
 
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    opacity: 0.18, mixBlendMode: 'multiply',
-                    background: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')",
-                  }}
-                />
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  opacity: 0.18, mixBlendMode: 'multiply',
+                  background: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')",
+                }} />
 
-                {/* Name badge */}
+                {/* Name badge — inline styles match BADGE_BASE_* constants */}
                 <div
                   className={`name-badge ${activeAction === 'drag' ? 'dragging active' : ''}`}
                   style={{
@@ -515,26 +513,20 @@
                   onTouchStart={onBadgeTouchStart}
                 >
                   <p style={{
-                    margin: '0 0 3px', fontSize: '10px',
-                    color: 'rgba(255,255,255,0.70)',
-                    fontFamily: "'Inter', sans-serif",
+                    margin: '0 0 3px', fontSize: BADGE_BASE_LABEL + 'px',
+                    color: 'rgba(255,255,255,0.70)', fontFamily: "'Inter', sans-serif",
                     textTransform: 'uppercase', letterSpacing: '0.04em',
                   }}>Best Wishes,</p>
 
                   <p style={{
-                    margin: 0, fontSize: '13px', lineHeight: 1.3,
-                    color: '#fff',
-                    fontFamily: "'Playfair Display', serif",
-                    fontStyle: 'italic',
+                    margin: 0, fontSize: BADGE_BASE_FONT + 'px', lineHeight: 1.3,
+                    color: '#fff', fontFamily: "'Playfair Display', serif", fontStyle: 'italic',
                   }}>{userName || 'Your Name'}</p>
 
                   <div style={{
-                    width: '100%',
-                    borderBottom: '1px dotted rgba(255,255,255,0.38)',
-                    marginTop: '7px',
+                    width: '100%', borderBottom: '1px dotted rgba(255,255,255,0.38)', marginTop: '7px',
                   }} />
 
-                  {/* Resize handle */}
                   <div
                     className="resize-handle"
                     onMouseDown={onResizeMouseDown}
@@ -544,10 +536,9 @@
                   </div>
                 </div>
 
-              </div>
-            </div>
+              </div>{/* .card-inner */}
+            </div>{/* .card-outer */}
 
-            {/* Download button */}
             <button
               onClick={handleDownload}
               disabled={isSaving}
@@ -562,10 +553,8 @@
 
           {/* ── Carousel Footer ── */}
           <footer className="pb-4 md:pb-8 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
-            <div
-              className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center"
-              style={{ touchAction: 'pan-x' }}
-            >
+            <div className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center"
+              style={{ touchAction: 'pan-x' }}>
               <div className="flex space-x-3 md:space-x-4">
                 {EID_DESIGNS.map((design) => (
                   <button
@@ -593,7 +582,7 @@
 
         </div>
 
-        {/* ── Saving Overlay ── */}
+        {/* Saving Overlay */}
         {isSaving && (
           <div className="saving-overlay">
             <div className="saving-spinner" />
@@ -601,15 +590,14 @@
           </div>
         )}
 
-        {/* ── Splash Screen ── */}
+        {/* Splash */}
         {showSplash && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-2xl">
             <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5 shadow-2xl flex flex-col items-center">
-
               <div className="mb-4 w-full flex flex-col items-center gap-2">
                 <div className="w-[100px] md:w-[120px] aspect-[4/3] bg-white rounded-2xl flex items-center
                   justify-center border-4 border-white overflow-hidden shadow-2xl">
-                  <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-2" alt="Ceevit Logo" />
+                  <img src={LOGO_URL} className="w-full h-full object-contain p-2" alt="Logo" />
                 </div>
                 <div className="bg-black/40 px-6 py-1 rounded-full border border-white/5 mt-1">
                   <h1 className="text-[12px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase text-center">
@@ -617,7 +605,6 @@
                   </h1>
                 </div>
               </div>
-
               <div className="text-center font-bengali space-y-4">
                 <h2 className="text-xl md:text-2xl font-black text-amber-100 leading-tight">
                   আমাদের সেই ছোট্টবেলার ঈদ কার্ড!
@@ -626,7 +613,6 @@
                   স্মৃতিময় সেই দিনগুলোর আনন্দ ফিরে আসুক আবার। নিজের পছন্দের ডিজাইন বেছে নিন এবং প্রিয়জনের জন্য বিশেষ বার্তা লিখে শেয়ার করুন।
                 </p>
               </div>
-
               <button
                 onClick={() => setShowSplash(false)}
                 className="mt-8 md:mt-10 w-full py-4 md:py-5 rounded-[20px] bg-amber-500
@@ -638,53 +624,40 @@
           </div>
         )}
 
-        {/* ── Edit Modal ── */}
+        {/* Edit Modal */}
         {isEditing && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
-            style={{ touchAction: 'auto' }}
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+            style={{ touchAction: 'auto' }}>
             <div className="modal-scroll w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8
               border border-white/5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-serif text-amber-100 italic">Customize</h3>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="text-stone-500 hover:text-white w-9 h-9 rounded-full
-                    hover:bg-white/10 flex items-center justify-center transition-all text-xl"
-                >✕</button>
+                <button onClick={() => setIsEditing(false)}
+                  className="text-stone-500 hover:text-white w-9 h-9 rounded-full hover:bg-white/10
+                    flex items-center justify-center transition-all text-xl">✕</button>
               </div>
-
               <div className="space-y-5">
                 <div>
                   <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">
                     Your Name
                   </label>
                   <input
-                    type="text"
-                    maxLength={25}
-                    value={userName}
+                    type="text" maxLength={25} value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     placeholder="Enter your name…"
                     className="allow-text-input w-full bg-black/40 border border-white/5 rounded-2xl p-4
-                      text-sm font-serif text-amber-50 outline-none text-center
-                      focus:border-amber-500/50 transition-colors"
+                      text-sm font-serif text-amber-50 outline-none text-center focus:border-amber-500/50 transition-colors"
                   />
                   <p className="text-right text-[9px] text-stone-600 mt-1 pr-1">{userName.length}/25</p>
                 </div>
-
                 <div className="bg-white/5 rounded-2xl p-4">
                   <p className="text-[10px] text-stone-400 leading-relaxed">
-                    💡 <strong className="text-stone-300">Tip:</strong> Close this, then <strong className="text-stone-300">drag</strong> the badge on the card to move it. Use the <span className="text-amber-400 font-bold">↗</span> handle to resize.
+                    💡 <strong className="text-stone-300">Tip:</strong> Close this, then <strong className="text-stone-300">drag</strong> the badge on the card. Use the <span className="text-amber-400 font-bold">↗</span> handle to resize.
                   </p>
                 </div>
-
-                <button
-                  onClick={() => setIsEditing(false)}
+                <button onClick={() => setIsEditing(false)}
                   className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black
-                    text-[12px] uppercase shadow-xl active:scale-95 transition-all"
-                >
+                    text-[12px] uppercase shadow-xl active:scale-95 transition-all">
                   Done
                 </button>
               </div>
@@ -700,5 +673,3 @@
 </script>
 </body>
 </html>
-
-
