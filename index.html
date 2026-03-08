@@ -15,7 +15,7 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap');
 
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
 
     body {
       font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
@@ -23,30 +23,29 @@
       background: #000;
       height: 100vh;
       overflow: hidden;
+      /* Block default touch scroll/zoom on body so drag is never interrupted */
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
-    .font-serif  { font-family: 'Playfair Display', serif; }
+    .font-serif   { font-family: 'Playfair Display', serif; }
     .font-bengali { font-family: 'Noto Sans Bengali', sans-serif; }
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    input[type='range']::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 20px; height: 20px;
-      background: #f59e0b; border-radius: 50%; border: 3px solid #1a120b;
-    }
-
-    /* ─── Fixed background ─── */
+    /* ── Background ── */
     .fixed-bg {
       position: fixed; inset: 0;
-      background: url("Background.jpg") center/cover no-repeat;
+      background: url("Background.jpg") center / cover no-repeat;
       z-index: 0;
     }
     @media (min-width: 1024px) {
       .fixed-bg { background-image: url("background desktop.jpg"); }
     }
 
-    /* ─── App shell ─── */
+    /* ── App shell ── */
     .app-shell {
       width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center;
@@ -66,57 +65,151 @@
       }
     }
 
-    .touch-none { touch-action: none; }
+    /* ── Card wrapper
+       IMPORTANT: touch-action:none here so iOS never intercepts the drag.
+       overflow is NOT hidden here — clipping happens on .card-inner only. ── */
+    .card-wrapper {
+      position: relative;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 4px;
+      background: #1c1917;
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 20px 36px 60px rgba(0,0,0,0.75);
+      transform: rotate(3deg);
+      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease;
+    }
+    .card-inner:hover {
+      transform: rotate(0deg) scale(1.01);
+      box-shadow: 28px 44px 80px rgba(0,0,0,0.85);
+    }
 
-    /* ─── EXPORT CANVAS (off-screen, never visible) ─── */
+    /* ── Name badge ── */
+    .name-badge {
+      position: absolute;
+      z-index: 30;
+      background: rgba(0,0,0,0.58);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 110px;
+      touch-action: none;
+      cursor: grab;
+      will-change: transform;
+      /* Make tap target large enough for phones */
+      -webkit-tap-highlight-color: transparent;
+    }
+    .name-badge.dragging  { cursor: grabbing; }
+    .name-badge.active    { outline: 2px solid #f59e0b; outline-offset: 2px; }
+
+    .resize-handle {
+      position: absolute;
+      bottom: -10px; right: -10px;
+      width: 28px; height: 28px;
+      background: #f59e0b;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      cursor: nwse-resize;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Export stage (off-screen) ── */
     #export-stage {
       position: fixed;
-      top: -9999px;
-      left: 0;
-      width: 800px;
-      height: 1000px;
+      top: -9999px; left: 0;
+      width: 800px; height: 1000px;
       overflow: hidden;
       pointer-events: none;
       z-index: -999;
-      /* NO transform — keeps pixel positions 1:1 with html2canvas */
     }
 
-    /* ─── Saving overlay ─── */
+    /* ── Saving overlay ── */
     .saving-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(10px);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 16px;
       color: #fff;
     }
     .saving-spinner {
       width: 48px; height: 48px;
-      border: 4px solid rgba(245,158,11,.3);
+      border: 4px solid rgba(245,158,11,.25);
       border-top-color: #f59e0b;
       border-radius: 50%;
       animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ─── Card tilt ─── */
-    .card-tilt {
-      transform: rotate(3deg);
-      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    /* ── Customize button — subtle bounce ── */
+    @keyframes subtle-bounce {
+      0%, 100% { transform: translateY(0)    scale(1);    }
+      35%       { transform: translateY(-5px) scale(1.05); }
+      65%       { transform: translateY(-2px) scale(1.02); }
+      82%       { transform: translateY(-3px) scale(1.03); }
     }
-    .card-tilt:hover { transform: rotate(0deg) scale(1.01); }
+    .btn-bounce {
+      animation: subtle-bounce 2.6s ease-in-out infinite;
+      display: inline-block;
+    }
+    .btn-bounce:active {
+      animation: none;
+      transform: scale(0.95) !important;
+    }
+
+    /* ── Pulse ring behind Customize button ── */
+    @keyframes ring-pulse {
+      0%   { transform: scale(1);   opacity: 0.65; }
+      70%  { transform: scale(1.6); opacity: 0;    }
+      100% { transform: scale(1.6); opacity: 0;    }
+    }
+    .btn-pulse-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-pulse-wrapper::before,
+    .btn-pulse-wrapper::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.4);
+      animation: ring-pulse 2.6s ease-out infinite;
+      pointer-events: none;
+    }
+    .btn-pulse-wrapper::after { animation-delay: 1.3s; }
+
+    /* Re-allow scroll/input inside modals */
+    .modal-scroll        { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+    .allow-text-input    { touch-action: auto; user-select: text; -webkit-user-select: text; }
   </style>
 </head>
 
 <body>
 <div id="root"></div>
-
-<!-- Hidden export stage lives OUTSIDE React so html2canvas never re-renders it mid-capture -->
 <div id="export-stage" aria-hidden="true"></div>
 
 <script type="text/babel">
   const { useState, useRef, useEffect, useCallback } = React;
 
-  /* ─── Constants ─── */
+  /* ── Constants ── */
   const CEEVIT_LOGO_URL = "Ceevit.png";
   const EID_DESIGNS = [
     { id: 1, name: 'Design 1', image: '1.png' },
@@ -128,32 +221,32 @@
     { id: 7, name: 'Design 7', image: '7.png' },
   ];
 
-  /* ─── Helpers ─── */
-  const raf = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const raf2 = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   async function waitForImages(node) {
     const imgs = [...node.querySelectorAll('img')];
     await Promise.all(imgs.map(img => new Promise(resolve => {
-      if (img.complete && img.naturalWidth > 0) { img.decode?.().catch(()=>{}).then(resolve); return; }
-      img.addEventListener('load',  () => img.decode?.().catch(()=>{}).then(resolve), { once: true });
+      if (img.complete && img.naturalWidth > 0) {
+        img.decode?.().catch(() => {}).finally(resolve);
+        return;
+      }
+      img.addEventListener('load',  () => img.decode?.().catch(() => {}).finally(resolve), { once: true });
       img.addEventListener('error', resolve, { once: true });
     })));
   }
 
-  /* ─── Build a pixel-perfect export DOM inside #export-stage ─── */
+  /* ── Pixel-perfect export DOM — plain inline styles, no Tailwind ── */
   function buildExportNode(design, userName, namePos, nameScale) {
     const W = 800, H = 1000;
     const stage = document.getElementById('export-stage');
     stage.innerHTML = '';
 
-    /* wrapper — exact card size */
     const card = document.createElement('div');
     Object.assign(card.style, {
       position: 'relative', width: W + 'px', height: H + 'px',
       overflow: 'hidden', background: '#1c1917',
     });
 
-    /* design image */
     const img = document.createElement('img');
     img.src = design.image;
     img.crossOrigin = 'anonymous';
@@ -163,22 +256,18 @@
     });
     card.appendChild(img);
 
-    /* paper texture */
     const tex = document.createElement('div');
     Object.assign(tex.style, {
-      position: 'absolute', inset: '0',
-      opacity: '0.15',
+      position: 'absolute', inset: '0', opacity: '0.15',
       background: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')",
     });
     card.appendChild(tex);
 
-    /* name badge */
     const badge = document.createElement('div');
-    const bx = (namePos.x / 100) * W;
-    const by = (namePos.y / 100) * H;
     Object.assign(badge.style, {
       position: 'absolute',
-      left: bx + 'px', top: by + 'px',
+      left: `${(namePos.x / 100) * W}px`,
+      top:  `${(namePos.y / 100) * H}px`,
       transform: `translate(-50%, -50%) scale(${nameScale})`,
       transformOrigin: 'center center',
       background: 'rgba(0,0,0,0.60)',
@@ -195,8 +284,7 @@
     const label = document.createElement('p');
     label.textContent = 'Best Wishes,';
     Object.assign(label.style, {
-      margin: '0 0 4px',
-      fontSize: '11px', lineHeight: '1.2',
+      margin: '0 0 4px', fontSize: '11px', lineHeight: '1.2',
       color: 'rgba(255,255,255,0.70)',
       fontFamily: "'Inter', sans-serif",
       textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -205,8 +293,7 @@
     const name = document.createElement('p');
     name.textContent = userName || 'Your Name';
     Object.assign(name.style, {
-      margin: '0',
-      fontSize: '15px', lineHeight: '1.3',
+      margin: '0', fontSize: '15px', lineHeight: '1.3',
       color: '#fff',
       fontFamily: "'Playfair Display', serif",
       fontStyle: 'italic',
@@ -214,7 +301,8 @@
 
     const divider = document.createElement('div');
     Object.assign(divider.style, {
-      width: '100%', borderBottom: '1px dotted rgba(255,255,255,0.40)',
+      width: '100%',
+      borderBottom: '1px dotted rgba(255,255,255,0.40)',
       marginTop: '8px',
     });
 
@@ -223,11 +311,10 @@
     badge.appendChild(divider);
     card.appendChild(badge);
     stage.appendChild(card);
-
     return card;
   }
 
-  /* ─── Main App ─── */
+  /* ════════════════ App ════════════════ */
   const App = () => {
     const [selectedDesign, setSelectedDesign] = useState(EID_DESIGNS[0]);
     const [userName,       setUserName]        = useState('');
@@ -235,58 +322,41 @@
     const [isEditing,      setIsEditing]        = useState(false);
     const [isSaving,       setIsSaving]         = useState(false);
 
-    const [namePos,   setNamePos]   = useState({ x: 75, y: 85 });
-    const [nameScale, setNameScale] = useState(0.8);
+    const [namePos,      setNamePos]      = useState({ x: 75, y: 85 });
+    const [nameScale,    setNameScale]    = useState(0.8);
     const [activeAction, setActiveAction] = useState(null);
 
-    const cardRef     = useRef(null);
-    const initialRef  = useRef({ x: 0, y: 0, scale: 1, pos: { x: 0, y: 0 } });
+    const cardWrapperRef = useRef(null);
+    const dragRef        = useRef(null);
 
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-    /* ─── Download ─── */
+    /* ── Download ── */
     const handleDownload = useCallback(async () => {
       if (isSaving) return;
       setIsSaving(true);
-
       try {
-        /* 1. Build pixel-perfect export DOM */
         const node = buildExportNode(selectedDesign, userName, namePos, nameScale);
-
-        /* 2. Wait for fonts + images + layout */
-        await raf();
+        await raf2();
         await document.fonts.ready.catch(() => {});
         await waitForImages(node);
-        await raf();
+        await raf2();
 
-        /* 3. Capture */
         const canvas = await html2canvas(node, {
-          useCORS:        true,
-          allowTaint:     false,
-          scale:          2,           /* 1600×2000 output */
-          backgroundColor: null,
-          logging:        false,
-          width:          800,
-          height:         1000,
-          x:              0,
-          y:              0,
-          scrollX:        0,
-          scrollY:        0,
-          windowWidth:    800,
-          windowHeight:   1000,
+          useCORS: true, allowTaint: false, scale: 2,
+          backgroundColor: null, logging: false,
+          width: 800, height: 1000,
+          x: 0, y: 0, scrollX: 0, scrollY: 0,
+          windowWidth: 800, windowHeight: 1000,
         });
 
-        /* 4. Trigger download */
         canvas.toBlob(blob => {
           if (!blob) return;
-          const url  = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.download = 'EidWish2026.png';
-          link.href = url;
-          link.click();
+          const url = URL.createObjectURL(blob);
+          const a   = Object.assign(document.createElement('a'), { download: 'EidWish2026.png', href: url });
+          a.click();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
         }, 'image/png', 1.0);
-
       } catch (err) {
         console.error('Download failed:', err);
       } finally {
@@ -294,82 +364,84 @@
       }
     }, [selectedDesign, userName, namePos, nameScale, isSaving]);
 
-    /* ─── Drag / Resize ─── */
-    const handleStart = useCallback((action, e) => {
-      e.stopPropagation();
-      const pt = e.touches ? e.touches[0] : e;
+    /* ══════════════════════════════════
+       DRAG & RESIZE  — native touch
+       All listeners added to window with
+       passive:false so e.preventDefault()
+       actually blocks iOS scroll.
+    ══════════════════════════════════ */
+    const startInteraction = useCallback((action, clientX, clientY) => {
+      dragRef.current = {
+        action,
+        startX: clientX, startY: clientY,
+        startPos:   { ...namePos },
+        startScale: nameScale,
+      };
       setActiveAction(action);
-      initialRef.current = { x: pt.clientX, y: pt.clientY, scale: nameScale, pos: { ...namePos } };
     }, [namePos, nameScale]);
 
-    const handleMove = useCallback((e) => {
-      if (!activeAction || !cardRef.current) return;
-      const pt   = e.touches ? e.touches[0] : e;
-      const rect = cardRef.current.getBoundingClientRect();
-      const dx   = pt.clientX - initialRef.current.x;
-      const dy   = pt.clientY - initialRef.current.y;
+    const onPointerMove = useCallback((clientX, clientY) => {
+      const d = dragRef.current;
+      if (!d || !cardWrapperRef.current) return;
+      const rect = cardWrapperRef.current.getBoundingClientRect();
+      const dx   = clientX - d.startX;
+      const dy   = clientY - d.startY;
 
-      if (activeAction === 'drag') {
-        const nx = initialRef.current.pos.x + (dx / rect.width)  * 100;
-        const ny = initialRef.current.pos.y + (dy / rect.height) * 100;
+      if (d.action === 'drag') {
         setNamePos({
-          x: Math.max(10, Math.min(90, nx)),
-          y: Math.max(10, Math.min(95, ny)),
+          x: Math.max(5, Math.min(95, d.startPos.x + (dx / rect.width)  * 100)),
+          y: Math.max(5, Math.min(95, d.startPos.y + (dy / rect.height) * 100)),
         });
-      } else if (activeAction === 'resize') {
-        setNameScale(s => Math.max(0.4, Math.min(2.0, initialRef.current.scale + dx / 120)));
+      } else if (d.action === 'resize') {
+        setNameScale(Math.max(0.35, Math.min(2.2, d.startScale + dx / 100)));
       }
-    }, [activeAction]);
+    }, []);
 
-    const handleEnd = useCallback(() => setActiveAction(null), []);
+    const endInteraction = useCallback(() => {
+      dragRef.current = null;
+      setActiveAction(null);
+    }, []);
 
     useEffect(() => {
       if (!activeAction) return;
-      window.addEventListener('mousemove', handleMove);
-      window.addEventListener('mouseup',   handleEnd);
-      window.addEventListener('touchmove', handleMove, { passive: false });
-      window.addEventListener('touchend',  handleEnd);
+
+      const onTM = (e) => { e.preventDefault(); onPointerMove(e.touches[0].clientX, e.touches[0].clientY); };
+      const onMM = (e) => onPointerMove(e.clientX, e.clientY);
+
+      window.addEventListener('touchmove',   onTM, { passive: false });
+      window.addEventListener('touchend',    endInteraction);
+      window.addEventListener('touchcancel', endInteraction);
+      window.addEventListener('mousemove',   onMM);
+      window.addEventListener('mouseup',     endInteraction);
+
       return () => {
-        window.removeEventListener('mousemove', handleMove);
-        window.removeEventListener('mouseup',   handleEnd);
-        window.removeEventListener('touchmove', handleMove);
-        window.removeEventListener('touchend',  handleEnd);
+        window.removeEventListener('touchmove',   onTM);
+        window.removeEventListener('touchend',    endInteraction);
+        window.removeEventListener('touchcancel', endInteraction);
+        window.removeEventListener('mousemove',   onMM);
+        window.removeEventListener('mouseup',     endInteraction);
       };
-    }, [activeAction, handleMove, handleEnd]);
+    }, [activeAction, onPointerMove, endInteraction]);
 
-    /* ─── Shared Name Badge (UI only) ─── */
-    const NameBadge = ({ forExport = false }) => (
-      <div
-        onMouseDown={forExport ? undefined : (e) => handleStart('drag', e)}
-        onTouchStart={forExport ? undefined : (e) => handleStart('drag', e)}
-        style={{
-          left:      `${namePos.x}%`,
-          top:       `${namePos.y}%`,
-          transform: `translate(-50%, -50%) scale(${nameScale})`,
-          cursor:    forExport ? 'default' : (activeAction === 'drag' ? 'grabbing' : 'grab'),
-        }}
-        className={`absolute z-30 bg-black/55 backdrop-blur-md px-3 py-2 rounded shadow-2xl
-          flex flex-col items-start min-w-[80px] border border-white/20 touch-none
-          ${!forExport && activeAction === 'drag' ? 'ring-2 ring-amber-500' : ''}`}
-      >
-        <p className="text-[10px] text-white/70 uppercase tracking-tight mb-0.5 font-sans">Best Wishes,</p>
-        <p className="text-white font-serif text-xs italic">{userName || 'Your Name'}</p>
-        <div className="w-full border-b border-dotted border-white/40 mt-1" />
+    /* Badge start handlers */
+    const onBadgeTouchStart = useCallback((e) => {
+      e.stopPropagation(); e.preventDefault();
+      startInteraction('drag', e.touches[0].clientX, e.touches[0].clientY);
+    }, [startInteraction]);
+    const onBadgeMouseDown = useCallback((e) => {
+      e.stopPropagation();
+      startInteraction('drag', e.clientX, e.clientY);
+    }, [startInteraction]);
 
-        {/* Resize handle — UI only */}
-        {!forExport && (
-          <div
-            onMouseDown={(e) => { e.stopPropagation(); handleStart('resize', e); }}
-            onTouchStart={(e) => { e.stopPropagation(); handleStart('resize', e); }}
-            className={`absolute -bottom-2 -right-2 w-7 h-7 bg-amber-500 rounded-full
-              flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg
-              ${activeAction === 'resize' ? 'ring-2 ring-white' : ''}`}
-          >
-            <i data-lucide="maximize-2" className="w-3 h-3 text-stone-900" />
-          </div>
-        )}
-      </div>
-    );
+    /* Resize handle start handlers */
+    const onResizeTouchStart = useCallback((e) => {
+      e.stopPropagation(); e.preventDefault();
+      startInteraction('resize', e.touches[0].clientX, e.touches[0].clientY);
+    }, [startInteraction]);
+    const onResizeMouseDown = useCallback((e) => {
+      e.stopPropagation();
+      startInteraction('resize', e.clientX, e.clientY);
+    }, [startInteraction]);
 
     return (
       <div className="app-shell">
@@ -379,6 +451,7 @@
 
           {/* ── Header ── */}
           <header className="pt-4 md:pt-6 pb-2 flex flex-col items-center gap-1 md:gap-2 flex-shrink-0">
+
             <div className="w-[80px] md:w-[100px] aspect-[4/3] bg-white rounded-xl md:rounded-2xl
               flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
               <img src={CEEVIT_LOGO_URL} className="w-full h-full object-contain p-1.5" alt="Ceevit Logo" />
@@ -390,73 +463,134 @@
               </h1>
             </div>
 
-            <button
-              onClick={() => setIsEditing(true)}
-              className="mt-2 bg-amber-500 text-stone-900 px-5 md:px-6 py-1.5 md:py-2 rounded-full
-                font-black text-[9px] md:text-[10px] uppercase shadow-lg active:scale-95 transition-all"
-            >
-              Customize Card
-            </button>
+            {/* Bouncing Customize button with pulse ring */}
+            <div className="btn-pulse-wrapper mt-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-bounce relative z-10 bg-amber-500 text-stone-900 px-5 md:px-6
+                  py-1.5 md:py-2 rounded-full font-black text-[9px] md:text-[10px] uppercase
+                  shadow-lg shadow-amber-900/40"
+              >
+                Customize Card
+              </button>
+            </div>
           </header>
 
           {/* ── Main Stage ── */}
-          <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 overflow-visible min-h-0">
+          <main className="flex-1 flex flex-col items-center justify-center px-4 md:px-6 pb-2 overflow-visible min-h-0">
 
-            {/* Visible Card */}
+            {/* Card wrapper — touch-action:none so no scroll interruption */}
             <div
-              ref={cardRef}
-              className="card-tilt relative w-full aspect-[4/5] max-h-[50vh] md:max-h-[55vh] lg:max-h-[60vh]
-                bg-stone-900 rounded shadow-[30px_50px_80px_rgba(0,0,0,0.8)]
-                overflow-hidden border border-white/5 mx-auto"
+              ref={cardWrapperRef}
+              className="card-wrapper w-full mx-auto"
+              style={{ maxHeight: 'min(50vh, calc(100vw * 1.25))', aspectRatio: '4/5' }}
             >
-              <img
-                src={selectedDesign.image}
-                crossOrigin="anonymous"
-                className="absolute inset-0 w-full h-full object-cover"
-                alt={selectedDesign.name}
-              />
-              <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply
-                bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-              <NameBadge />
+              <div className="card-inner" style={{ aspectRatio: '4/5' }}>
+
+                <img
+                  src={selectedDesign.image}
+                  crossOrigin="anonymous"
+                  draggable="false"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  alt={selectedDesign.name}
+                />
+
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    opacity: 0.18, mixBlendMode: 'multiply',
+                    background: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')",
+                  }}
+                />
+
+                {/* Name badge */}
+                <div
+                  className={`name-badge ${activeAction === 'drag' ? 'dragging active' : ''}`}
+                  style={{
+                    left:      `${namePos.x}%`,
+                    top:       `${namePos.y}%`,
+                    transform: `translate(-50%, -50%) scale(${nameScale})`,
+                  }}
+                  onMouseDown={onBadgeMouseDown}
+                  onTouchStart={onBadgeTouchStart}
+                >
+                  <p style={{
+                    margin: '0 0 3px', fontSize: '10px',
+                    color: 'rgba(255,255,255,0.70)',
+                    fontFamily: "'Inter', sans-serif",
+                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}>Best Wishes,</p>
+
+                  <p style={{
+                    margin: 0, fontSize: '13px', lineHeight: 1.3,
+                    color: '#fff',
+                    fontFamily: "'Playfair Display', serif",
+                    fontStyle: 'italic',
+                  }}>{userName || 'Your Name'}</p>
+
+                  <div style={{
+                    width: '100%',
+                    borderBottom: '1px dotted rgba(255,255,255,0.38)',
+                    marginTop: '7px',
+                  }} />
+
+                  {/* Resize handle */}
+                  <div
+                    className="resize-handle"
+                    onMouseDown={onResizeMouseDown}
+                    onTouchStart={onResizeTouchStart}
+                  >
+                    <i data-lucide="maximize-2" style={{ width: 12, height: 12, color: '#1c1917' }} />
+                  </div>
+                </div>
+
+              </div>
             </div>
 
-            {/* Download Button */}
+            {/* Download button */}
             <button
               onClick={handleDownload}
               disabled={isSaving}
-              className="mt-4 md:mt-8 bg-white/10 text-white px-8 py-3 rounded-full font-black
+              className="mt-5 md:mt-7 bg-white/10 text-white px-8 py-3 rounded-full font-black
                 shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[9px] md:text-[10px]
-                tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all flex-shrink-0"
+                tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all"
             >
               <i data-lucide="download" className="w-4 h-4 text-amber-400" />
-              Download Card
+              {isSaving ? 'Processing…' : 'Download Card'}
             </button>
           </main>
 
           {/* ── Carousel Footer ── */}
-          <footer className="pb-4 md:pb-8 pt-4 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
-            <div className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center">
+          <footer className="pb-4 md:pb-8 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
+            <div
+              className="flex overflow-x-auto px-8 no-scrollbar pb-2 justify-start md:justify-center"
+              style={{ touchAction: 'pan-x' }}
+            >
               <div className="flex space-x-3 md:space-x-4">
                 {EID_DESIGNS.map((design) => (
                   <button
                     key={design.id}
                     onClick={() => setSelectedDesign(design)}
-                    className={`flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full border-2 transition-all overflow-hidden relative
+                    className={`flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full border-2
+                      transition-all overflow-hidden relative
                       ${selectedDesign.id === design.id
                         ? 'border-amber-400 scale-110 shadow-lg shadow-amber-900/40'
                         : 'border-white/10 opacity-40 scale-90'}`}
                   >
-                    <img src={design.image} className="absolute inset-0 w-full h-full object-cover" alt={design.name} />
-                    <div className="absolute inset-0 bg-black/20" />
+                    <img src={design.image} draggable="false"
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      alt={design.name} />
+                    <div className="absolute inset-0 bg-black/20 pointer-events-none" />
                     <span className="relative text-[9px] md:text-[10px] font-black text-white">{design.id}</span>
                   </button>
                 ))}
               </div>
             </div>
-            <p className="text-[8px] md:text-[10px] text-stone-400 font-serif tracking-[0.8em] md:tracking-[1em] uppercase text-center mt-3 md:mt-4">
+            <p className="text-[8px] md:text-[10px] text-stone-400 font-serif tracking-[0.8em] uppercase text-center mt-3">
               In association with <span className="text-white font-bold ml-2 uppercase tracking-[0.3em]">Ceevit</span>
             </p>
           </footer>
+
         </div>
 
         {/* ── Saving Overlay ── */}
@@ -470,8 +604,7 @@
         {/* ── Splash Screen ── */}
         {showSplash && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-2xl">
-            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5
-              shadow-2xl flex flex-col items-center">
+            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 md:p-10 border border-white/5 shadow-2xl flex flex-col items-center">
 
               <div className="mb-4 w-full flex flex-col items-center gap-2">
                 <div className="w-[100px] md:w-[120px] aspect-[4/3] bg-white rounded-2xl flex items-center
@@ -496,8 +629,8 @@
 
               <button
                 onClick={() => setShowSplash(false)}
-                className="mt-8 md:mt-10 w-full py-4 md:py-5 rounded-[20px] bg-amber-500 text-stone-900
-                  font-bengali font-black text-lg shadow-2xl active:scale-95 transition-all"
+                className="mt-8 md:mt-10 w-full py-4 md:py-5 rounded-[20px] bg-amber-500
+                  text-stone-900 font-bengali font-black text-lg shadow-2xl active:scale-95 transition-all"
               >
                 শুরু করুন
               </button>
@@ -507,20 +640,23 @@
 
         {/* ── Edit Modal ── */}
         {isEditing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl">
-            <div className="w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8 border border-white/5
-              shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+            style={{ touchAction: 'auto' }}
+          >
+            <div className="modal-scroll w-full max-w-sm bg-[#1a120b] rounded-[40px] p-8
+              border border-white/5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
 
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-serif text-amber-100 italic">Customize Content</h3>
+                <h3 className="text-xl font-serif text-amber-100 italic">Customize</h3>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="text-stone-500 hover:text-white w-8 h-8 rounded-full hover:bg-white/10
-                    flex items-center justify-center transition-all text-lg"
+                  className="text-stone-500 hover:text-white w-9 h-9 rounded-full
+                    hover:bg-white/10 flex items-center justify-center transition-all text-xl"
                 >✕</button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
                   <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">
                     Your Name
@@ -531,15 +667,16 @@
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     placeholder="Enter your name…"
-                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm font-serif
-                      text-amber-50 outline-none text-center focus:border-amber-500/50 transition-colors"
+                    className="allow-text-input w-full bg-black/40 border border-white/5 rounded-2xl p-4
+                      text-sm font-serif text-amber-50 outline-none text-center
+                      focus:border-amber-500/50 transition-colors"
                   />
                   <p className="text-right text-[9px] text-stone-600 mt-1 pr-1">{userName.length}/25</p>
                 </div>
 
-                <div className="pt-2">
-                  <p className="text-[10px] uppercase tracking-widest text-stone-500 mb-3 font-black">
-                    Tip: Drag the badge on the card to reposition. Use the ↗ handle to resize.
+                <div className="bg-white/5 rounded-2xl p-4">
+                  <p className="text-[10px] text-stone-400 leading-relaxed">
+                    💡 <strong className="text-stone-300">Tip:</strong> Close this, then <strong className="text-stone-300">drag</strong> the badge on the card to move it. Use the <span className="text-amber-400 font-bold">↗</span> handle to resize.
                   </p>
                 </div>
 
@@ -548,12 +685,13 @@
                   className="w-full py-4 rounded-2xl bg-amber-500 text-stone-900 font-black
                     text-[12px] uppercase shadow-xl active:scale-95 transition-all"
                 >
-                  Apply Changes
+                  Done
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     );
   };
