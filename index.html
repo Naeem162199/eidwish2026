@@ -135,15 +135,12 @@
 
     const App = () => {
       const [selectedDesign, setSelectedDesign] = useState(EID_DESIGNS[0]);
-      const [userWish, setUserWish] = useState('Eid Mubarak!');
       const [userName, setUserName] = useState('');
       const [showSplash, setShowSplash] = useState(true);
       const [isEditing, setIsEditing] = useState(false);
       const [isSaving, setIsSaving] = useState(false);
 
-      const [wishPos, setWishPos] = useState({ x: 50, y: 35 });
       const [namePos, setNamePos] = useState({ x: 75, y: 85 });
-      const [wishScale, setWishScale] = useState(1.0);
       const [nameScale, setNameScale] = useState(0.8);
       const [activeAction, setActiveAction] = useState(null);
 
@@ -183,7 +180,6 @@
       };
 
       // ✅ capture the hidden export node so UI never flashes/tiles on mobile
-      // ✅ make export match UI resizing by using identical typography + widths
       // ✅ canva-style: wait for fonts/images + lock capture dimensions
       const handleDownload = async () => {
         setIsSaving(true);
@@ -192,26 +188,22 @@
           const node = exportRef.current;
           if (!node) throw new Error("Export node missing");
 
-          // Let React paint any last state updates
           await waitNextFrame();
           await waitNextFrame();
 
-          // Wait for fonts (important for Bengali + serif)
           if (document.fonts && document.fonts.ready) {
             await document.fonts.ready.catch(() => {});
           }
 
-          // Ensure export node images are loaded/decoded
           await waitImagesInNode(node);
 
-          // Lock capture size (guarantees no stretch)
           const targetW = 800;
           const targetH = 1000;
 
           const canvas = await html2canvas(node, {
             useCORS: true,
             scale: 3,
-            backgroundColor: null, // keep PNG transparent; set "#000" if you want solid bg
+            backgroundColor: null,
             logging: false,
             width: targetW,
             height: targetH,
@@ -239,8 +231,8 @@
         e.stopPropagation();
         const point = e.touches ? e.touches[0] : e;
         setActiveAction(`${action}${type}`);
-        const currentPos = type === 'Wish' ? wishPos : namePos;
-        const currentScale = type === 'Wish' ? wishScale : nameScale;
+        const currentPos = namePos;
+        const currentScale = nameScale;
         initialTouchRef.current = { x: point.clientX, y: point.clientY, scale: currentScale, pos: { ...currentPos } };
       };
 
@@ -252,18 +244,14 @@
         const dy = point.clientY - initialTouchRef.current.y;
 
         if (activeAction.startsWith('drag')) {
-          const type = activeAction.replace('drag', '');
           const xPerc = initialTouchRef.current.pos.x + (dx / rect.width) * 100;
           const yPerc = initialTouchRef.current.pos.y + (dy / rect.height) * 100;
           const constrainedX = Math.max(10, Math.min(90, xPerc));
           const constrainedY = Math.max(10, Math.min(95, yPerc));
-          if (type === 'Wish') setWishPos({ x: constrainedX, y: constrainedY });
-          else setNamePos({ x: constrainedX, y: constrainedY });
+          setNamePos({ x: constrainedX, y: constrainedY });
         } else if (activeAction.startsWith('resizing')) {
-          const type = activeAction.replace('resizing', '');
           const newScale = Math.max(0.4, Math.min(2.0, initialTouchRef.current.scale + (dx / 120)));
-          if (type === 'Wish') setWishScale(newScale);
-          else setNameScale(newScale);
+          setNameScale(newScale);
         }
       };
 
@@ -325,33 +313,6 @@
                 <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
-                {/* WISH BOX — dark translucent + white text */}
-                <div
-                  onMouseDown={(e) => handleStart('Wish', 'drag', e)}
-                  onTouchStart={(e) => handleStart('Wish', 'drag', e)}
-                  style={{
-                    left: `${wishPos.x}%`,
-                    top: `${wishPos.y}%`,
-                    transform: `translate(-50%, -50%) scale(${wishScale})`,
-                    cursor: isSaving ? 'default' : (activeAction === 'dragWish' ? 'grabbing' : 'grab')
-                  }}
-                  className={`absolute z-30 pointer-events-auto bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[120px] md:min-w-[140px] group touch-none border border-white/20 ${activeAction?.includes('Wish') ? 'ring-2 ring-amber-500' : ''}`}
-                >
-                  <p className="text-white font-serif text-[11px] md:text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
-                  <div className="w-full border-b border-dotted border-white/40 mt-2"></div>
-
-                  {/* Resize Icon - HIDDEN ON SAVE */}
-                  {!isSaving && (
-                    <div
-                      onMouseDown={(e) => handleStart('Wish', 'resizing', e)}
-                      onTouchStart={(e) => handleStart('Wish', 'resizing', e)}
-                      className="absolute -bottom-2 -right-2 w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center cursor-nwse-resize border-2 border-white shadow-lg opacity-100 transition-opacity"
-                    >
-                      <i data-lucide="maximize-2" className="w-3 h-3 md:w-4 md:h-4 text-stone-900"></i>
-                    </div>
-                  )}
-                </div>
-
                 {/* NAME BOX — dark translucent + white text */}
                 <div
                   onMouseDown={(e) => handleStart('Name', 'drag', e)}
@@ -395,19 +356,6 @@
                 <div className="relative w-full h-full bg-stone-900 overflow-hidden border border-white/5">
                   <img src={selectedDesign.image} crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-
-                  {/* WISH BOX (export) — SAME AS UI (no resize icon) */}
-                  <div
-                    style={{
-                      left: `${wishPos.x}%`,
-                      top: `${wishPos.y}%`,
-                      transform: `translate(-50%, -50%) scale(${wishScale})`
-                    }}
-                    className="absolute z-30 bg-black/55 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 rounded shadow-2xl flex flex-col items-center min-w-[120px] md:min-w-[140px] border border-white/20"
-                  >
-                    <p className="text-white font-serif text-[11px] md:text-sm leading-tight text-center whitespace-pre-wrap">{userWish || "Eid Mubarak"}</p>
-                    <div className="w-full border-b border-dotted border-white/40 mt-2"></div>
-                  </div>
 
                   {/* NAME BOX (export) — SAME AS UI (no resize icon) */}
                   <div
@@ -490,16 +438,6 @@
                   <button onClick={() => setIsEditing(false)} className="text-stone-600 p-2 hover:text-white transition-colors">✕</button>
                 </div>
                 <div className="space-y-6">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">Your Wish</label>
-                    <textarea
-                      rows={2}
-                      maxLength={60}
-                      value={userWish}
-                      onChange={(e) => setUserWish(e.target.value)}
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm font-serif text-amber-50 outline-none text-center resize-none"
-                    />
-                  </div>
                   <div>
                     <label className="text-[10px] uppercase tracking-widest text-stone-500 block mb-2 font-black">Your Name</label>
                     <input
