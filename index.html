@@ -211,6 +211,37 @@
     .design-strip.dragging-strip { cursor: grabbing; scroll-behavior: auto; }
     .design-strip::-webkit-scrollbar { display: none; }
     .design-strip { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ── Guide text glow animation ── */
+    @keyframes amber-glow {
+      0%, 100% {
+        color: #f59e0b;
+        text-shadow:
+          0 0 6px rgba(245,158,11,0.8),
+          0 0 14px rgba(245,158,11,0.5),
+          0 0 28px rgba(245,158,11,0.3);
+      }
+      50% {
+        color: #fcd34d;
+        text-shadow:
+          0 0 10px rgba(252,211,77,1),
+          0 0 22px rgba(245,158,11,0.8),
+          0 0 40px rgba(245,158,11,0.5);
+      }
+    }
+    .guide-text {
+      animation: amber-glow 2.2s ease-in-out infinite;
+      font-family: 'Inter', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      text-align: center;
+      display: block;
+      margin-bottom: 8px;
+    }
+    @media (min-width: 768px) {
+      .guide-text { font-size: 9px; }
+    }
   </style>
 </head>
 
@@ -588,8 +619,6 @@
                   {selectedIdx + 1} / {EID_DESIGNS.length}
                 </p>
               </div>
-
-              {/* Download — smaller than before */}
               <button
                 onClick={handleDownload}
                 disabled={isSaving}
@@ -606,10 +635,8 @@
           {/* Footer */}
           <footer className="pb-4 md:pb-6 pt-2 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
 
-            {/* Guide text */}
-            <p className="text-center text-[8px] md:text-[9px] text-stone-500 uppercase tracking-[0.25em] mb-2 font-sans">
-              ✦ Select a design below ✦
-            </p>
+            {/* Guide text — amber glow animation */}
+            <span className="guide-text">✦ Select a design below ✦</span>
 
             <div className="relative">
               <div className="absolute left-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
