@@ -199,7 +199,7 @@
       .card-nav-btn.right { right: -18px; }
     }
 
-    /* ── Design strip — mouse drag scroll on desktop ── */
+    /* ── Design strip ── */
     .design-strip {
       display: flex;
       overflow-x: auto;
@@ -221,9 +221,9 @@
 <script type="text/babel">
   const { useState, useRef, useEffect, useCallback } = React;
 
-  const LOGO_URL     = "Trumega.png";
-  const EXPORT_W     = 1024;
-  const EXPORT_H     = 1536;
+  const LOGO_URL         = "Trumega.png";
+  const EXPORT_W         = 1024;
+  const EXPORT_H         = 1536;
   const BADGE_BASE_FONT  = 13;
   const BADGE_BASE_LABEL = 10;
 
@@ -326,15 +326,12 @@
     return card;
   }
 
-  /* ════════════════════════════════════
-     Design Strip — mouse-drag scrolling
-  ════════════════════════════════════ */
+  /* ── Design Strip ── */
   const DesignStrip = ({ designs, selectedId, onSelect }) => {
-    const stripRef    = useRef(null);
-    const stripDrag   = useRef(null); // { startX, scrollLeft }
-    const didDrag     = useRef(false);
+    const stripRef  = useRef(null);
+    const stripDrag = useRef(null);
+    const didDrag   = useRef(false);
 
-    /* Auto-scroll selected thumb into view */
     useEffect(() => {
       if (!stripRef.current) return;
       const active = stripRef.current.querySelector('[data-active="true"]');
@@ -398,43 +395,33 @@
     );
   };
 
-  /* ════════════════ App ════════════════ */
+  /* ── App ── */
   const App = () => {
     const [selectedIdx,  setSelectedIdx]  = useState(0);
     const [userName,     setUserName]      = useState('');
     const [showSplash,   setShowSplash]    = useState(true);
     const [isEditing,    setIsEditing]     = useState(false);
     const [isSaving,     setIsSaving]      = useState(false);
-
     const [namePos,      setNamePos]       = useState({ x: 75, y: 85 });
     const [nameScale,    setNameScale]     = useState(0.8);
     const [activeAction, setActiveAction]  = useState(null);
 
     const selectedDesign = EID_DESIGNS[selectedIdx];
-
-    const cardInnerRef = useRef(null);
-    const dragRef      = useRef(null);
+    const cardInnerRef   = useRef(null);
+    const dragRef        = useRef(null);
 
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-    /* ── Card prev / next ── */
-    const goPrev = useCallback(() => {
-      setSelectedIdx(i => (i - 1 + EID_DESIGNS.length) % EID_DESIGNS.length);
-    }, []);
-    const goNext = useCallback(() => {
-      setSelectedIdx(i => (i + 1) % EID_DESIGNS.length);
-    }, []);
+    const goPrev = useCallback(() => setSelectedIdx(i => (i - 1 + EID_DESIGNS.length) % EID_DESIGNS.length), []);
+    const goNext = useCallback(() => setSelectedIdx(i => (i + 1) % EID_DESIGNS.length), []);
 
     /* ── Download ── */
     const handleDownload = useCallback(async () => {
       if (isSaving) return;
       setIsSaving(true);
       try {
-        const cardW = cardInnerRef.current
-          ? cardInnerRef.current.getBoundingClientRect().width
-          : 300;
-
-        const node = buildExportNode(selectedDesign, userName, namePos, nameScale, cardW);
+        const cardW = cardInnerRef.current ? cardInnerRef.current.getBoundingClientRect().width : 300;
+        const node  = buildExportNode(selectedDesign, userName, namePos, nameScale, cardW);
         await raf2();
         await document.fonts.ready.catch(() => {});
         await waitForImages(node);
@@ -464,12 +451,7 @@
 
     /* ── Drag & Resize ── */
     const startInteraction = useCallback((action, clientX, clientY) => {
-      dragRef.current = {
-        action,
-        startX: clientX, startY: clientY,
-        startPos:   { ...namePos },
-        startScale: nameScale,
-      };
+      dragRef.current = { action, startX: clientX, startY: clientY, startPos: { ...namePos }, startScale: nameScale };
       setActiveAction(action);
     }, [namePos, nameScale]);
 
@@ -477,8 +459,8 @@
       const d = dragRef.current;
       if (!d || !cardInnerRef.current) return;
       const rect = cardInnerRef.current.getBoundingClientRect();
-      const dx   = clientX - d.startX;
-      const dy   = clientY - d.startY;
+      const dx = clientX - d.startX;
+      const dy = clientY - d.startY;
       if (d.action === 'drag') {
         setNamePos({
           x: Math.max(5, Math.min(95, d.startPos.x + (dx / rect.width)  * 100)),
@@ -489,26 +471,23 @@
       }
     }, []);
 
-    const endInteraction = useCallback(() => {
-      dragRef.current = null;
-      setActiveAction(null);
-    }, []);
+    const endInteraction = useCallback(() => { dragRef.current = null; setActiveAction(null); }, []);
 
     useEffect(() => {
       if (!activeAction) return;
       const onTM = (e) => { e.preventDefault(); onPointerMove(e.touches[0].clientX, e.touches[0].clientY); };
       const onMM = (e) => onPointerMove(e.clientX, e.clientY);
-      window.addEventListener('touchmove',    onTM, { passive: false });
-      window.addEventListener('touchend',     endInteraction);
-      window.addEventListener('touchcancel',  endInteraction);
-      window.addEventListener('mousemove',    onMM);
-      window.addEventListener('mouseup',      endInteraction);
+      window.addEventListener('touchmove',   onTM, { passive: false });
+      window.addEventListener('touchend',    endInteraction);
+      window.addEventListener('touchcancel', endInteraction);
+      window.addEventListener('mousemove',   onMM);
+      window.addEventListener('mouseup',     endInteraction);
       return () => {
-        window.removeEventListener('touchmove',    onTM);
-        window.removeEventListener('touchend',     endInteraction);
-        window.removeEventListener('touchcancel',  endInteraction);
-        window.removeEventListener('mousemove',    onMM);
-        window.removeEventListener('mouseup',      endInteraction);
+        window.removeEventListener('touchmove',   onTM);
+        window.removeEventListener('touchend',    endInteraction);
+        window.removeEventListener('touchcancel', endInteraction);
+        window.removeEventListener('mousemove',   onMM);
+        window.removeEventListener('mouseup',     endInteraction);
       };
     }, [activeAction, onPointerMove, endInteraction]);
 
@@ -523,19 +502,17 @@
 
         <div className="app-container">
 
-          {/* ── Header ── */}
+          {/* Header */}
           <header className="pt-4 md:pt-6 pb-2 flex flex-col items-center gap-1 md:gap-2 flex-shrink-0">
             <div className="w-[80px] md:w-[100px] aspect-[4/3] bg-white rounded-xl md:rounded-2xl
               flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
               <img src={LOGO_URL} className="w-full h-full object-contain p-1.5" alt="Logo" />
             </div>
-
             <div className="bg-black/40 backdrop-blur-md px-6 py-1 rounded-full border border-white/5 shadow-lg mt-1">
               <h1 className="text-[12px] md:text-[14px] font-serif italic text-amber-200/90 tracking-[0.3em] uppercase">
                 Eid Wish 2026
               </h1>
             </div>
-
             <div className="btn-pulse-wrapper mt-2">
               <button
                 onClick={() => setIsEditing(true)}
@@ -548,32 +525,19 @@
             </div>
           </header>
 
-          {/* ── Main Stage ── */}
+          {/* Main Stage */}
           <main className="flex-1 flex flex-col items-center justify-center px-8 md:px-10 pb-2 overflow-visible min-h-0">
 
-            {/* Card + side arrows wrapper */}
+            {/* Card + arrows */}
             <div className="relative w-full mx-auto flex items-center justify-center"
               style={{ maxHeight: 'min(55vh, calc(100vw * 1.5))' }}>
 
-              {/* LEFT arrow */}
-              <button
-                className="card-nav-btn left"
-                onClick={goPrev}
-                aria-label="Previous design"
-              >
+              <button className="card-nav-btn left" onClick={goPrev} aria-label="Previous design">
                 <i data-lucide="chevron-left" style={{ width:16, height:16, color:'#fff' }} />
               </button>
 
-              {/* Card */}
-              <div
-                className="card-outer w-full"
-                style={{ aspectRatio: '2/3' }}
-              >
-                <div
-                  ref={cardInnerRef}
-                  className="card-inner"
-                  style={{ aspectRatio: '2/3' }}
-                >
+              <div className="card-outer w-full" style={{ aspectRatio: '2/3' }}>
+                <div ref={cardInnerRef} className="card-inner" style={{ aspectRatio: '2/3' }}>
                   <img
                     src={selectedDesign.image}
                     crossOrigin="anonymous"
@@ -581,13 +545,10 @@
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     alt={selectedDesign.name}
                   />
-
                   <div className="absolute inset-0 pointer-events-none" style={{
                     opacity: 0.18, mixBlendMode: 'multiply',
                     background: "url('https://www.transparenttextures.com/patterns/paper-fibers.png')",
                   }} />
-
-                  {/* Name badge */}
                   <div
                     className={`name-badge ${activeAction === 'drag' ? 'dragging active' : ''}`}
                     style={{
@@ -603,47 +564,31 @@
                       color: 'rgba(255,255,255,0.70)', fontFamily: "'Inter', sans-serif",
                       textTransform: 'uppercase', letterSpacing: '0.04em',
                     }}>Best Wishes,</p>
-
                     <p style={{
                       margin: 0, fontSize: BADGE_BASE_FONT + 'px', lineHeight: 1.3,
                       color: '#fff', fontFamily: "'Playfair Display', serif", fontStyle: 'italic',
                     }}>{userName || 'Your Name'}</p>
-
-                    <div style={{
-                      width: '100%', borderBottom: '1px dotted rgba(255,255,255,0.38)', marginTop: '7px',
-                    }} />
-
-                    <div
-                      className="resize-handle"
-                      onMouseDown={onResizeMouseDown}
-                      onTouchStart={onResizeTouchStart}
-                    >
+                    <div style={{ width:'100%', borderBottom:'1px dotted rgba(255,255,255,0.38)', marginTop:'7px' }} />
+                    <div className="resize-handle" onMouseDown={onResizeMouseDown} onTouchStart={onResizeTouchStart}>
                       <i data-lucide="maximize-2" style={{ width:12, height:12, color:'#1c1917' }} />
                     </div>
                   </div>
-
                 </div>
               </div>
 
-              {/* RIGHT arrow */}
-              <button
-                className="card-nav-btn right"
-                onClick={goNext}
-                aria-label="Next design"
-              >
+              <button className="card-nav-btn right" onClick={goNext} aria-label="Next design">
                 <i data-lucide="chevron-right" style={{ width:16, height:16, color:'#fff' }} />
               </button>
+            </div>
 
-            </div>{/* card + arrows wrapper */}
-
-            {/* Design counter pill */}
+            {/* Counter pill */}
             <div className="mt-3 bg-black/40 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/10">
               <p className="text-[9px] text-white/60 font-sans tracking-widest">
                 {selectedIdx + 1} / {EID_DESIGNS.length}
               </p>
             </div>
 
-            {/* Download button */}
+            {/* Download */}
             <button
               onClick={handleDownload}
               disabled={isSaving}
@@ -656,18 +601,18 @@
             </button>
           </main>
 
-          {/* ── Carousel Footer ── */}
+          {/* Footer */}
           <footer className="pb-4 md:pb-6 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
-            {/* Fade mask hints at scrollable content on both sides */}
             <div className="relative">
               <div className="absolute left-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
                 style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.85), transparent)' }} />
               <div className="absolute right-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
                 style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.85), transparent)' }} />
-              designs={EID_DESIGNS}
-              selectedId={selectedDesign.id}
-              onSelect={(d) => setSelectedIdx(EID_DESIGNS.findIndex(x => x.id === d.id))}
-            />
+              <DesignStrip
+                designs={EID_DESIGNS}
+                selectedId={selectedDesign.id}
+                onSelect={(d) => setSelectedIdx(EID_DESIGNS.findIndex(x => x.id === d.id))}
+              />
             </div>
             <p className="text-[8px] md:text-[10px] text-stone-400 font-serif tracking-[0.8em] uppercase text-center mt-2">
               In association with <span className="text-white font-bold ml-2 uppercase tracking-[0.3em]">Trumega</span>
