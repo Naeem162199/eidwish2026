@@ -383,8 +383,8 @@
               className={`flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full border-2
                 transition-all overflow-hidden relative
                 ${design.id === selectedId
-                  ? 'border-amber-400 scale-110 shadow-lg shadow-amber-900/40'
-                  : 'border-white/10 opacity-40 scale-90'}`}
+                  ? 'border-amber-400 scale-110 shadow-[0_0_16px_4px_rgba(245,158,11,0.5)]'
+                  : 'border-white/10 opacity-35 scale-90 grayscale'}`}
             >
               <img src={design.image} draggable="false"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -658,11 +658,17 @@
 
           {/* ── Carousel Footer ── */}
           <footer className="pb-4 md:pb-6 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
-            <DesignStrip
+            {/* Fade mask hints at scrollable content on both sides */}
+            <div className="relative">
+              <div className="absolute left-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
+                style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.85), transparent)' }} />
+              <div className="absolute right-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
+                style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.85), transparent)' }} />
               designs={EID_DESIGNS}
               selectedId={selectedDesign.id}
               onSelect={(d) => setSelectedIdx(EID_DESIGNS.findIndex(x => x.id === d.id))}
             />
+            </div>
             <p className="text-[8px] md:text-[10px] text-stone-400 font-serif tracking-[0.8em] uppercase text-center mt-2">
               In association with <span className="text-white font-bold ml-2 uppercase tracking-[0.3em]">Trumega</span>
             </p>
