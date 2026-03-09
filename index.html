@@ -581,28 +581,36 @@
               </button>
             </div>
 
-            {/* Counter pill */}
-            <div className="mt-3 bg-black/40 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/10">
-              <p className="text-[9px] text-white/60 font-sans tracking-widest">
-                {selectedIdx + 1} / {EID_DESIGNS.length}
-              </p>
-            </div>
+            {/* Counter pill + Download — compact, side by side */}
+            <div className="mt-2 flex items-center gap-3">
+              <div className="bg-black/40 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/10">
+                <p className="text-[9px] text-white/60 font-sans tracking-widest">
+                  {selectedIdx + 1} / {EID_DESIGNS.length}
+                </p>
+              </div>
 
-            {/* Download */}
-            <button
-              onClick={handleDownload}
-              disabled={isSaving}
-              className="mt-3 md:mt-4 bg-white/10 text-white px-8 py-3 rounded-full font-black
-                shadow-2xl backdrop-blur-xl border border-white/20 uppercase text-[9px] md:text-[10px]
-                tracking-[0.2em] flex items-center gap-3 active:scale-95 disabled:opacity-50 transition-all"
-            >
-              <i data-lucide="download" className="w-4 h-4 text-amber-400" />
-              {isSaving ? 'Processing…' : 'Download Card'}
-            </button>
+              {/* Download — smaller than before */}
+              <button
+                onClick={handleDownload}
+                disabled={isSaving}
+                className="bg-white/10 text-white px-5 py-1.5 rounded-full font-black
+                  shadow-xl backdrop-blur-xl border border-white/20 uppercase text-[8px]
+                  tracking-[0.15em] flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                <i data-lucide="download" className="w-3 h-3 text-amber-400" />
+                {isSaving ? 'Processing…' : 'Download Card'}
+              </button>
+            </div>
           </main>
 
           {/* Footer */}
-          <footer className="pb-4 md:pb-6 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
+          <footer className="pb-4 md:pb-6 pt-2 bg-gradient-to-t from-black via-black/95 to-transparent flex-shrink-0">
+
+            {/* Guide text */}
+            <p className="text-center text-[8px] md:text-[9px] text-stone-500 uppercase tracking-[0.25em] mb-2 font-sans">
+              ✦ Select a design below ✦
+            </p>
+
             <div className="relative">
               <div className="absolute left-0 top-0 bottom-2 w-8 z-10 pointer-events-none"
                 style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.85), transparent)' }} />
@@ -614,6 +622,7 @@
                 onSelect={(d) => setSelectedIdx(EID_DESIGNS.findIndex(x => x.id === d.id))}
               />
             </div>
+
             <p className="text-[8px] md:text-[10px] text-stone-400 font-serif tracking-[0.8em] uppercase text-center mt-2">
               In association with <span className="text-white font-bold ml-2 uppercase tracking-[0.3em]">Trumega</span>
             </p>
