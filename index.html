@@ -271,7 +271,6 @@
       display: flex; flex-direction: column; align-items: center;
       gap: 16px; padding: 24px 0 32px;
     }
-    /* The promo card — 9:16 aspect ratio (1080×1920) */
     .promo-card {
       width: 100%;
       aspect-ratio: 9/16;
@@ -282,32 +281,12 @@
       border: 1px solid rgba(255,255,255,0.08);
       box-shadow: 0 24px 60px rgba(0,0,0,0.7);
     }
-    /* ============================================================
-      PROMO IMAGE PLACEHOLDER
-      CHANGE NEEDED: Replace "YOUR_PROMO_IMAGE.jpg" with your actual
-      promo image filename and add it to your GitHub repo.
-      The image should ideally be 1080×1920px for best quality.
-    ============================================================ */
+    /* ── FIX: promo image fully visible, covers the card ── */
     .promo-card-img {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
       object-fit: cover;
-      /* Remove the line below once you add your real image */
-      display: none;
-    }
-    .promo-card-placeholder {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 12px; padding: 24px;
-      background: linear-gradient(160deg, #1a120b 0%, #0d0d0d 100%);
-    }
-    .promo-card-placeholder-icon {
-      width: 64px; height: 64px;
-      border-radius: 16px;
-      background: rgba(245,158,11,0.15);
-      border: 2px dashed rgba(245,158,11,0.4);
-      display: flex; align-items: center; justify-content: center;
+      display: block;       /* was "none" before — this was hiding it */
     }
     @keyframes success-pop {
       0%   { transform: scale(0.88); opacity: 0; }
@@ -327,14 +306,10 @@
 
   /* ============================================================
     GOOGLE SHEETS DATA COLLECTION
-    CHANGE NEEDED (Step 1): Replace the URL below with your
-    Google Apps Script Web App URL.
-    See setup instructions in the comment block at the bottom
-    of this file, just before </body>.
+    CHANGE NEEDED: Replace the URL below with your Apps Script Web App URL.
   ============================================================ */
   const GOOGLE_SHEET_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
-  /* Fire-and-forget: sends name + design to Google Sheets */
   function trackToSheet(userName, designName) {
     if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL.includes('YOUR_APPS_SCRIPT')) return;
     const params = new URLSearchParams({
@@ -344,7 +319,7 @@
       userAgent: navigator.userAgent.slice(0, 120),
     });
     fetch(`${GOOGLE_SHEET_URL}?${params}`, { method: 'GET', mode: 'no-cors' })
-      .catch(() => {}); // silent fail — never block the user
+      .catch(() => {});
   }
 
   const LOGO_URL         = "Trumega.png";
@@ -521,9 +496,7 @@
     );
   };
 
-  /* ════════════════════════════════════════
-     SUCCESS SCREEN (shown after download)
-  ════════════════════════════════════════ */
+  /* ── Success Screen ── */
   const SuccessScreen = ({ userName, designName, onStartOver }) => {
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
@@ -543,39 +516,18 @@
             </p>
           </div>
 
-          {/* ── Promo card 9:16 ── */}
+          {/* Promo card 9:16
+              ──────────────────────────────────────────────────────
+              PROMO IMAGE: filename is "Trumega Ad.png"
+              Make sure this file is uploaded to your GitHub repo.
+              The space in the filename is fine — browsers handle it.
+              ────────────────────────────────────────────────────── */}
           <div className="promo-card w-full" style={{ maxWidth: 280 }}>
-            {/* ============================================================
-              CHANGE NEEDED: Once you have your promo image ready:
-              1. Add your image file (e.g. "promo.jpg") to your GitHub repo
-              2. Change "YOUR_PROMO_IMAGE.jpg" below to your filename
-              3. Remove the style="display:none" from the <img> tag
-              4. Delete the entire .promo-card-placeholder <div> below it
-            ============================================================ */}
             <img
               src="Trumega Ad.png"
-              className="Trumega Ad.png"
-              alt="Eid Wish 2026 promo"
+              className="promo-card-img"
+              alt="Trumega Ad"
             />
-
-            {/* This placeholder disappears once you add the real image above */}
-            <div className="promo-card-placeholder">
-              <div className="promo-card-placeholder-icon">
-                <i data-lucide="image" style={{ width:28, height:28, color:'#f59e0b' }} />
-              </div>
-              <p className="text-[11px] text-amber-400/80 font-serif italic text-center leading-relaxed">
-                Your 1080 × 1920<br/>promo image goes here
-              </p>
-              <p className="text-[9px] text-stone-600 text-center tracking-widest uppercase mt-1">
-                Replace in code
-              </p>
-
-              {/* Decorative branding inside placeholder */}
-              <div className="mt-8 flex flex-col items-center gap-1 opacity-30">
-                <img src={LOGO_URL} className="w-10 h-auto object-contain" alt="Logo" />
-                <p className="text-[8px] text-white uppercase tracking-[0.3em]">Trumega</p>
-              </div>
-            </div>
           </div>
 
           {/* Share nudge */}
@@ -590,8 +542,6 @@
 
           {/* Action buttons */}
           <div className="flex flex-col items-center gap-3 w-full px-6">
-
-            {/* Start Over — primary CTA */}
             <button
               onClick={onStartOver}
               className="w-full py-3.5 rounded-2xl bg-amber-500 text-stone-900 font-black
@@ -601,8 +551,6 @@
               <i data-lucide="refresh-cw" style={{ width:14, height:14 }} />
               Make Another Card
             </button>
-
-            {/* Close / go back without resetting */}
             <button
               onClick={onStartOver}
               className="text-[9px] text-stone-500 uppercase tracking-widest underline
@@ -643,7 +591,6 @@
     const goPrev = useCallback(() => setSelectedIdx(i => (i - 1 + EID_DESIGNS.length) % EID_DESIGNS.length), []);
     const goNext = useCallback(() => setSelectedIdx(i => (i + 1) % EID_DESIGNS.length), []);
 
-    /* ── Start Over ── */
     const handleStartOver = useCallback(() => {
       setShowSuccess(false);
       setSelectedIdx(0);
@@ -679,7 +626,6 @@
           a.click();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-          /* ── GA event: track each download ── */
           if (typeof gtag !== 'undefined') {
             gtag('event', 'card_downloaded', {
               design_name: selectedDesign.name,
@@ -687,10 +633,7 @@
             });
           }
 
-          /* ── Google Sheets: log participation ── */
           trackToSheet(userName, selectedDesign.name);
-
-          /* ── Show success screen ── */
           setShowSuccess(true);
 
         }, 'image/png', 1.0);
@@ -781,7 +724,6 @@
           {/* Main Stage */}
           <main className="flex-1 flex flex-col items-center justify-center px-8 md:px-10 pb-2 overflow-visible min-h-0">
 
-            {/* Card + arrows */}
             <div className="relative w-full mx-auto flex items-center justify-center"
               style={{ maxHeight: 'min(55vh, calc(100vw * 1.5))' }}>
 
@@ -883,7 +825,7 @@
           </div>
         )}
 
-        {/* ── Success Screen ── */}
+        {/* Success Screen */}
         {showSuccess && (
           <SuccessScreen
             userName={userName}
@@ -979,23 +921,17 @@
   GOOGLE SHEETS SETUP INSTRUCTIONS
   ================================================================
 
-  WHAT YOU NEED TO DO (one-time setup):
-
   STEP 1 — Create your Google Sheet
   ----------------------------------
   1. Go to sheets.google.com → create a new sheet
   2. In Row 1, add these exact headers in columns A–D:
-       A1: Timestamp
-       B1: Name
-       C1: Design
-       D1: UserAgent
+       A1: Timestamp   B1: Name   C1: Design   D1: UserAgent
 
   STEP 2 — Create the Apps Script
   ----------------------------------
-  1. In your sheet, click Extensions → Apps Script
-  2. Delete all existing code and paste this:
+  1. In your sheet: Extensions → Apps Script
+  2. Delete all code and paste this:
 
-  ─────────────────────────────────────────────
   function doGet(e) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     sheet.appendRow([
@@ -1008,25 +944,16 @@
       .createTextOutput(JSON.stringify({ status: 'ok' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
-  ─────────────────────────────────────────────
 
-  3. Click Save (floppy disk icon)
-  4. Click Deploy → New deployment
-  5. Type: Web app
-  6. Execute as: Me
-  7. Who has access: Anyone
-  8. Click Deploy → copy the Web App URL
+  3. Save → Deploy → New deployment
+  4. Type: Web app | Execute as: Me | Access: Anyone
+  5. Copy the Web App URL
 
-  STEP 3 — Paste the URL in this file
+  STEP 3 — Paste URL in this file
   ----------------------------------
-  Find this line near the top of the <script> block:
-    const GOOGLE_SHEET_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
-  Replace the placeholder with your copied URL.
-
-  THAT'S IT. Every download will now log a row in your sheet.
+  Find:  const GOOGLE_SHEET_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+  Replace with your copied URL.
   ================================================================
 -->
 </body>
 </html>
-
-
